@@ -1,0 +1,13 @@
+EASIEST WAY (ONE-CLICK LAUNCHER):
+Double-click `start.bat` in the root folder (E:\auramed\start.bat).
+This automatically starts both backend and frontend and opens your browser.
+
+MANUAL RUN:
+BACKEND:
+cd E:\auramed\backend
+.\.venv\Scripts\Activate.ps1
+python tests/run_sqlite_server.py
+
+FRONTEND:
+cd E:\auramed\frontend
+npm run dev

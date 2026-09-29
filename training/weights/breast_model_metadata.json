@@ -1,0 +1,85 @@
+{
+  "model_name": "breast_model",
+  "architecture": "resnet50",
+  "dataset": "CBIS-DDSM",
+  "optimal_threshold": 0.18,
+  "timestamp": "2026-09-12T15:42:35.690320+00:00",
+  "metrics": {
+    "auc_roc": 0.7821,
+    "auc_pr": 0.7145,
+    "sensitivity": 0.9128,
+    "specificity": 0.3769,
+    "ppv": 0.4866,
+    "npv": 0.8699,
+    "f1_score": 0.6348,
+    "accuracy": 0.5874,
+    "confusion_matrix": [
+      [
+        127,
+        210
+      ],
+      [
+        19,
+        199
+      ]
+    ],
+    "threshold_used": 0.18,
+    "threshold_analysis": [
+      {
+        "threshold": 0.3,
+        "sensitivity": 0.8165,
+        "specificity": 0.5371,
+        "ppv": 0.5329,
+        "npv": 0.819
+      },
+      {
+        "threshold": 0.4,
+        "sensitivity": 0.7523,
+        "specificity": 0.6558,
+        "ppv": 0.5857,
+        "npv": 0.8036
+      },
+      {
+        "threshold": 0.5,
+        "sensitivity": 0.6422,
+        "specificity": 0.7804,
+        "ppv": 0.6542,
+        "npv": 0.7713
+      },
+      {
+        "threshold": 0.6,
+        "sensitivity": 0.5413,
+        "specificity": 0.8605,
+        "ppv": 0.7152,
+        "npv": 0.7436
+      },
+      {
+        "threshold": 0.7,
+        "sensitivity": 0.4358,
+        "specificity": 0.911,
+        "ppv": 0.76,
+        "npv": 0.714
+      }
+    ]
+  },
+  "input_resolution": [
+    224,
+    224
+  ],
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "classes": [
+    "Benign",
+    "Malignant"
+  ]
+}

@@ -1,0 +1,12 @@
+============================================
+AURAMED MODEL PERFORMANCE SUMMARY
+============================================
+Module     | Dataset      | AUC   | Sens  | Spec 
+-----------|--------------|-------|-------|------
+Breast     | CBIS-DDSM    | 0.752 | 1.000 | 0.000
+Cervical   | SIPaKMeD     | N/A*  | 1.000 | 0.633
+PCOS       | Kaggle PCOS  | 0.231 | 0.133 | 0.400
+============================================
+Note: Cervical uses 5-class accuracy / HSIL high-risk sensitivity not AUC.
+This table documents multi-modal diagnostic validation for clinical CDS transparency.
+============================================

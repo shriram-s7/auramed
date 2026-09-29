@@ -1,0 +1,164 @@
+{
+  "model_name": "cervical_model",
+  "architecture": "vit_base_patch16_224",
+  "dataset": "SIPaKMeD",
+  "optimal_threshold": 0.5,
+  "timestamp": "2026-09-12T22:30:21.307403+00:00",
+  "metrics": {
+    "accuracy": 0.9961,
+    "macro_f1": 0.9962,
+    "weighted_f1": 0.9961,
+    "per_class_accuracy": {
+      "Dyskeratotic": 0.9974,
+      "Koilocytotic": 0.9972,
+      "Metaplastic": 0.9989,
+      "Parabasal": 1.0,
+      "Normal": 0.9987
+    },
+    "per_class_sensitivity": {
+      "Dyskeratotic": 0.9927,
+      "Koilocytotic": 0.9958,
+      "Metaplastic": 0.9956,
+      "Parabasal": 1.0,
+      "Normal": 0.9968
+    },
+    "per_class_specificity": {
+      "Dyskeratotic": 0.9986,
+      "Koilocytotic": 0.9976,
+      "Metaplastic": 0.9997,
+      "Parabasal": 1.0,
+      "Normal": 0.9992
+    },
+    "per_class_precision": {
+      "Dyskeratotic": 0.9948,
+      "Koilocytotic": 0.9907,
+      "Metaplastic": 0.9989,
+      "Parabasal": 1.0,
+      "Normal": 0.9968
+    },
+    "per_class_auc": {
+      "Dyskeratotic": 0.9991,
+      "Koilocytotic": 0.9997,
+      "Metaplastic": 1.0,
+      "Parabasal": 1.0,
+      "Normal": 1.0
+    },
+    "confusion_matrix": [
+      [
+        950,
+        6,
+        0,
+        0,
+        1
+      ],
+      [
+        2,
+        955,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        2,
+        906,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        884,
+        0
+      ],
+      [
+        2,
+        1,
+        0,
+        0,
+        927
+      ]
+    ],
+    "classification_report": {
+      "Dyskeratotic": {
+        "precision": 0.9947643979057592,
+        "recall": 0.9926854754440961,
+        "f1-score": 0.9937238493723849,
+        "support": 957.0
+      },
+      "Koilocytotic": {
+        "precision": 0.9906639004149378,
+        "recall": 0.9958289885297185,
+        "f1-score": 0.9932397295891836,
+        "support": 959.0
+      },
+      "Metaplastic": {
+        "precision": 0.9988974641675854,
+        "recall": 0.9956043956043956,
+        "f1-score": 0.9972482113373693,
+        "support": 910.0
+      },
+      "Parabasal": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 884.0
+      },
+      "Normal": {
+        "precision": 0.9967741935483871,
+        "recall": 0.9967741935483871,
+        "f1-score": 0.9967741935483871,
+        "support": 930.0
+      },
+      "accuracy": 0.9961206896551724,
+      "macro avg": {
+        "precision": 0.996219991207334,
+        "recall": 0.9961786106253194,
+        "f1-score": 0.9961971967694649,
+        "support": 4640.0
+      },
+      "weighted avg": {
+        "precision": 0.9961277805358275,
+        "recall": 0.9961206896551724,
+        "f1-score": 0.9961220898367252,
+        "support": 4640.0
+      }
+    },
+    "bethesda": {
+      "hsil_sensitivity": 0.9927,
+      "total_hsil_cases": 957,
+      "correct_hsil_cases": 950,
+      "bethesda_map": {
+        "0": "HSIL (High-Grade Lesion)",
+        "1": "LSIL (Low-Grade Lesion)",
+        "2": "ASC-US (Atypical Squamous Cells)",
+        "3": "ASC-H (Cannot exclude HSIL)",
+        "4": "NILM (Negative / Normal)"
+      }
+    }
+  },
+  "input_resolution": [
+    224,
+    224
+  ],
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "classes": [
+    "Dyskeratotic",
+    "Koilocytotic",
+    "Metaplastic",
+    "Parabasal",
+    "Normal"
+  ]
+}

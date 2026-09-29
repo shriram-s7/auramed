@@ -1,0 +1,33 @@
+# Trained model weights (not committed; see README)
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.safetensors
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node / build output
+node_modules/
+frontend/dist/
+
+# Secrets (use the .env.example files)
+.env
+**/.env
+
+# Local databases and runtime data
+*.db
+*.db-shm
+*.db-wal
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Local-only files
+*.lnk
+Patient ID*.txt
+fix_demo.py

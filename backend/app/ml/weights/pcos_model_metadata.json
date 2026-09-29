@@ -1,0 +1,85 @@
+{
+  "model_name": "pcos_model",
+  "architecture": "ResNet-50-PCOS-Ultrasound",
+  "dataset": "Kaggle_PCOS_Ultrasound",
+  "optimal_threshold": 0.04,
+  "timestamp": "2026-09-12T22:51:18.505076+00:00",
+  "metrics": {
+    "auc_roc": 1.0,
+    "auc_pr": 1.0,
+    "sensitivity": 1.0,
+    "specificity": 1.0,
+    "ppv": 1.0,
+    "npv": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0,
+    "confusion_matrix": [
+      [
+        343,
+        0
+      ],
+      [
+        0,
+        234
+      ]
+    ],
+    "threshold_used": 0.04,
+    "threshold_analysis": [
+      {
+        "threshold": 0.3,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "ppv": 1.0,
+        "npv": 1.0
+      },
+      {
+        "threshold": 0.4,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "ppv": 1.0,
+        "npv": 1.0
+      },
+      {
+        "threshold": 0.5,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "ppv": 1.0,
+        "npv": 1.0
+      },
+      {
+        "threshold": 0.6,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "ppv": 1.0,
+        "npv": 1.0
+      },
+      {
+        "threshold": 0.7,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "ppv": 1.0,
+        "npv": 1.0
+      }
+    ]
+  },
+  "input_resolution": [
+    224,
+    224
+  ],
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "classes": [
+    "Normal",
+    "PCOS"
+  ]
+}
