@@ -183,11 +183,8 @@ export default function LoginPage() {
 
           <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-col space-y-3 text-center">
             <div className="text-xs text-slate-400">
-              New patient without an account?{' '}
-              <Link to="/register" className="text-teal-400 hover:text-teal-300 font-semibold underline underline-offset-2">
-                Register as Patient
-              </Link>
-            </div>
+              Need a patient account? Ask your clinic to register you and provide your sign-in details.
+</div>
             <div>
               <Link to="/" className="text-xs text-slate-500 hover:text-slate-400">
                 &larr; Return to AuraMed Overview
@@ -199,7 +196,7 @@ export default function LoginPage() {
         {/* Security / Compliance Badge */}
         <div className="mt-6 flex items-center justify-center space-x-2 text-slate-500 text-[11px]">
           <ShieldCheck className="w-3.5 h-3.5 text-teal-400/80" />
-          <span>AES-256 Encrypted &bull; HIPAA & DPDP Compliant &bull; Role-Isolated Session</span>
+          <span>Authenticated access &bull; Clinician-led care &bull; Research prototype</span>
         </div>
       </div>
     </div>

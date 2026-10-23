@@ -1,0 +1,3 @@
+period,cohort_id,eligible_referrals,contacted_referrals,specialist_seen,outcomes_recorded,cancelled_referrals,overdue_referrals,coordination_minutes,measurement_notes
+baseline,,,,,,,,,
+pilot,,,,,,,,,

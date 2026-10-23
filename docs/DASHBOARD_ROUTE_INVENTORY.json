@@ -1,0 +1,1052 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/admin/dashboard",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 58,
+    "handler": "get_admin_dashboard"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/stats",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 121,
+    "handler": "get_admin_stats"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/system-status",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 199,
+    "handler": "get_system_status"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/pending-counts",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 268,
+    "handler": "get_pending_counts"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/audit-logs",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 289,
+    "handler": "get_audit_logs"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/doctors",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 626,
+    "handler": "get_doctors_list"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/doctors/{id}/verify",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 700,
+    "handler": "verify_doctor"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/doctors/{id}/status",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 740,
+    "handler": "update_doctor_status"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/doctors",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 794,
+    "handler": "add_new_doctor"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/doctors/{id}",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 855,
+    "handler": "edit_doctor"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/admin/doctors/{id}",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 924,
+    "handler": "remove_doctor"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/patients",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 966,
+    "handler": "get_all_patients"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/admin/patients/{id}",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1011,
+    "handler": "remove_patient"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/scans",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1051,
+    "handler": "get_all_scans"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/reports",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1105,
+    "handler": "get_all_reports"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/appointments",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1143,
+    "handler": "get_all_appointments"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/admin/appointments/{id}",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1181,
+    "handler": "admin_cancel_appointment"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/appointments/{id}/cancel",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1218,
+    "handler": "admin_cancel_appointment_alias"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/data-requests",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1322,
+    "handler": "get_data_deletion_requests"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/data-requests/{id}/approve",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1397,
+    "handler": "approve_data_deletion_request"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/data-requests/{id}/reject",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1457,
+    "handler": "reject_data_deletion_request"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/settings",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1642,
+    "handler": "get_admin_settings"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/settings",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1679,
+    "handler": "update_admin_settings"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/settings/feature-flags",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1765,
+    "handler": "get_feature_flags"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/settings/feature-flags",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1793,
+    "handler": "update_feature_flag"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/backup",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1840,
+    "handler": "trigger_database_backup"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/settings/backup",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1840,
+    "handler": "trigger_database_backup"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/settings/test-email",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1943,
+    "handler": "test_email"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/settings/test-sms",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1953,
+    "handler": "test_sms"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/settings/download-backup",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1963,
+    "handler": "download_backup"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/settings/clear-cache",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1977,
+    "handler": "clear_cache"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/settings/danger-action",
+    "file": "backend/app/api/routes/admin.py",
+    "line": 1994,
+    "handler": "execute_danger_action"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/appointments",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 108,
+    "handler": "schedule_appointment"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/appointments/calendar",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 231,
+    "handler": "get_appointment_calendar"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/appointments",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 259,
+    "handler": "list_appointments"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/appointments/{appointment_id}",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 348,
+    "handler": "get_appointment_by_id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/appointments/{appointment_id}",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 371,
+    "handler": "patch_appointment"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/appointments/{appointment_id}/status",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 510,
+    "handler": "patch_appointment_status_alias"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/appointments/{appointment_id}/complete",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 520,
+    "handler": "complete_appointment"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/doctor/appointments/{appointment_id}",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 568,
+    "handler": "update_appointment"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/appointments/{appointment_id}",
+    "file": "backend/app/api/routes/appointments.py",
+    "line": 578,
+    "handler": "cancel_appointment_endpoint"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 85,
+    "handler": "unified_login"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/admin/login",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 155,
+    "handler": "admin_login"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/doctor/login",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 189,
+    "handler": "doctor_login"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/patient/login",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 297,
+    "handler": "patient_login"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/doctor/register",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 354,
+    "handler": "doctor_register"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/patient/register",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 419,
+    "handler": "patient_register"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/register",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 493,
+    "handler": "patient_self_register"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 547,
+    "handler": "logout"
+  },
+  {
+    "method": "GET",
+    "path": "/api/auth/me",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 573,
+    "handler": "me"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/refresh",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 616,
+    "handler": "refresh"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/forgot-password",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 641,
+    "handler": "forgot_password"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/reset-password",
+    "file": "backend/app/api/routes/auth.py",
+    "line": 657,
+    "handler": "reset_password"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/care",
+    "file": "backend/app/api/routes/care.py",
+    "line": 61,
+    "handler": "care_dashboard"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/care/patients/{patient_id}/contact",
+    "file": "backend/app/api/routes/care.py",
+    "line": 138,
+    "handler": "update_contact"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/care/referrals/{referral_id}",
+    "file": "backend/app/api/routes/care.py",
+    "line": 155,
+    "handler": "progress_referral"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/care/appointments/{appointment_id}/remind",
+    "file": "backend/app/api/routes/care.py",
+    "line": 167,
+    "handler": "remind"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/care/messages/{message_id}/refresh",
+    "file": "backend/app/api/routes/care.py",
+    "line": 182,
+    "handler": "refresh_message"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/care/export",
+    "file": "backend/app/api/routes/care.py",
+    "line": 193,
+    "handler": "export_metrics"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/care/scans/{scan_id}/triage",
+    "file": "backend/app/api/routes/care.py",
+    "line": 212,
+    "handler": "record_triage"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/activity",
+    "file": "backend/app/api/routes/doctor_activity.py",
+    "line": 368,
+    "handler": "get_doctor_activity"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/activity/export",
+    "file": "backend/app/api/routes/doctor_activity.py",
+    "line": 476,
+    "handler": "export_activity_csv"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/dashboard",
+    "file": "backend/app/api/routes/doctor_dashboard.py",
+    "line": 283,
+    "handler": "dashboard_summary"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/dashboard/summary",
+    "file": "backend/app/api/routes/doctor_dashboard.py",
+    "line": 283,
+    "handler": "dashboard_summary"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/dashboard/urgent-cases",
+    "file": "backend/app/api/routes/doctor_dashboard.py",
+    "line": 296,
+    "handler": "urgent_cases"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scan/breast",
+    "file": "backend/app/api/routes/doctor_scans_submission.py",
+    "line": 327,
+    "handler": "submit_breast_scan"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scan/cervical",
+    "file": "backend/app/api/routes/doctor_scans_submission.py",
+    "line": 368,
+    "handler": "submit_cervical_scan"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scan/pcos",
+    "file": "backend/app/api/routes/doctor_scans_submission.py",
+    "line": 409,
+    "handler": "submit_pcos_scan"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scan/results/{scan_id}",
+    "file": "backend/app/api/routes/doctor_scans_submission.py",
+    "line": 450,
+    "handler": "get_scan_result_singular"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/settings",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 106,
+    "handler": "get_doctor_settings"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/settings/profile",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 183,
+    "handler": "update_doctor_profile_endpoint"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/settings/notifications",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 258,
+    "handler": "update_doctor_notifications_endpoint"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/settings/clinical",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 293,
+    "handler": "update_doctor_clinical_endpoint"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/settings",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 328,
+    "handler": "update_doctor_settings_unified"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/change-password",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 362,
+    "handler": "doctor_change_password"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/sessions",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 434,
+    "handler": "get_doctor_sessions"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/sessions/all-others",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 500,
+    "handler": "revoke_all_other_sessions_endpoint"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/sessions",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 500,
+    "handler": "revoke_all_other_sessions_endpoint"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/sessions/{session_id}",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 536,
+    "handler": "revoke_session_endpoint"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/login-history",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 581,
+    "handler": "get_doctor_login_history"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/export-data",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 616,
+    "handler": "export_doctor_data_endpoint"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/deactivate",
+    "file": "backend/app/api/routes/doctor_settings.py",
+    "line": 769,
+    "handler": "deactivate_account"
+  },
+  {
+    "method": "GET",
+    "path": "/api/notifications",
+    "file": "backend/app/api/routes/notifications.py",
+    "line": 22,
+    "handler": "get_notifications"
+  },
+  {
+    "method": "GET",
+    "path": "/api/notifications/unread-count",
+    "file": "backend/app/api/routes/notifications.py",
+    "line": 63,
+    "handler": "get_unread_notification_count"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/notifications/{notification_id}/read",
+    "file": "backend/app/api/routes/notifications.py",
+    "line": 88,
+    "handler": "mark_notification_read"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/notifications/read-all",
+    "file": "backend/app/api/routes/notifications.py",
+    "line": 130,
+    "handler": "mark_all_notifications_read"
+  },
+  {
+    "method": "POST",
+    "path": "/api/notifications/process-pending",
+    "file": "backend/app/api/routes/notifications.py",
+    "line": 152,
+    "handler": "trigger_process_pending_notifications"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/patients/{patient_id}",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 452,
+    "handler": "get_patient_detail"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/patients/{patient_id}",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 494,
+    "handler": "update_patient"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/patients/{patient_id}/timeline",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 579,
+    "handler": "get_patient_timeline"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/patients/{patient_id}/risk-trend",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 601,
+    "handler": "get_patient_risk_trend"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/patients/{patient_id}/overall-notes",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 650,
+    "handler": "update_overall_notes"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/patients/{patient_id}/notes",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 675,
+    "handler": "add_note"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/patients/{patient_id}/flag-urgent",
+    "file": "backend/app/api/routes/patient_detail.py",
+    "line": 707,
+    "handler": "toggle_urgent_flag"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/dashboard",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 107,
+    "handler": "get_patient_dashboard"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/reports",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 252,
+    "handler": "get_patient_reports"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/reports/{report_id}",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 299,
+    "handler": "get_patient_report_detail"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/reports/{report_id}/pdf",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 569,
+    "handler": "download_patient_report_pdf"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/appointments",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 679,
+    "handler": "get_patient_appointments"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/patient/appointments/{id}/reschedule",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 757,
+    "handler": "reschedule_appointment"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/patient/appointments/{id}/cancel",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 779,
+    "handler": "cancel_appointment"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/timeline",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 802,
+    "handler": "get_patient_timeline"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patient/profile",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 890,
+    "handler": "get_patient_profile"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/patient/profile",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 912,
+    "handler": "update_patient_profile"
+  },
+  {
+    "method": "POST",
+    "path": "/api/patient/change-password",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 943,
+    "handler": "change_patient_password"
+  },
+  {
+    "method": "POST",
+    "path": "/api/patient/export-data",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 979,
+    "handler": "export_patient_data"
+  },
+  {
+    "method": "POST",
+    "path": "/api/patient/data-deletion-request",
+    "file": "backend/app/api/routes/patient_portal.py",
+    "line": 1087,
+    "handler": "request_patient_data_deletion"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/patients/stats",
+    "file": "backend/app/api/routes/patients.py",
+    "line": 107,
+    "handler": "patient_stats"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/patients",
+    "file": "backend/app/api/routes/patients.py",
+    "line": 187,
+    "handler": "list_patients"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/patients",
+    "file": "backend/app/api/routes/patients.py",
+    "line": 310,
+    "handler": "create_patient"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/patients/{patient_id}/status",
+    "file": "backend/app/api/routes/patients.py",
+    "line": 447,
+    "handler": "update_patient_status"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/patients/{patient_id}",
+    "file": "backend/app/api/routes/patients.py",
+    "line": 470,
+    "handler": "delete_patient"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patients/me",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 65,
+    "handler": "get_own_profile"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/patients/me",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 74,
+    "handler": "update_own_profile"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patients/me/appointments",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 116,
+    "handler": "get_own_appointments"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patients/me/scans",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 151,
+    "handler": "get_own_scans"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patients/me/reports",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 182,
+    "handler": "get_own_reports"
+  },
+  {
+    "method": "GET",
+    "path": "/api/patients/me/reports/{report_id}",
+    "file": "backend/app/api/routes/patients_portal_me.py",
+    "line": 216,
+    "handler": "get_own_report_detail"
+  },
+  {
+    "method": "GET",
+    "path": "/uploads/{file_path:path}",
+    "file": "backend/app/api/routes/private_files.py",
+    "line": 51,
+    "handler": "private_upload"
+  },
+  {
+    "method": "GET",
+    "path": "/api/scans/{scan_id}/primary-image",
+    "file": "backend/app/api/routes/private_files.py",
+    "line": 71,
+    "handler": "primary_image"
+  },
+  {
+    "method": "GET",
+    "path": "/api/public/stats",
+    "file": "backend/app/api/routes/public.py",
+    "line": 19,
+    "handler": "get_public_stats"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/referrals/specialists",
+    "file": "backend/app/api/routes/referrals.py",
+    "line": 151,
+    "handler": "list_specialists"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/referrals/patient-context/{patient_id}",
+    "file": "backend/app/api/routes/referrals.py",
+    "line": 156,
+    "handler": "get_patient_referral_context"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/referrals",
+    "file": "backend/app/api/routes/referrals.py",
+    "line": 201,
+    "handler": "create_referral"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/referrals",
+    "file": "backend/app/api/routes/referrals.py",
+    "line": 288,
+    "handler": "list_doctor_referrals"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/referrals/{referral_id}",
+    "file": "backend/app/api/routes/referrals.py",
+    "line": 302,
+    "handler": "update_referral"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 73,
+    "handler": "create_report"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans/{scan_id}/report",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 99,
+    "handler": "get_scan_report"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/reports",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 110,
+    "handler": "list_doctor_reports"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/reports/{report_id}",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 125,
+    "handler": "get_report_by_id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/reports/{report_id}",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 144,
+    "handler": "patch_report_content"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/doctor/reports/{report_id}",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 213,
+    "handler": "save_report_draft"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports/{report_id}/generate-pdf",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 244,
+    "handler": "generate_report_pdf_endpoint"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports/{report_id}/sign",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 292,
+    "handler": "sign_report"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports/{report_id}/approve",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 369,
+    "handler": "approve_report"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports/{report_id}/addendum",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 386,
+    "handler": "add_report_addendum"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/reports/{report_id}/share",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 438,
+    "handler": "share_report"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/reports",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 501,
+    "handler": "list_reports"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/reports/{report_id}",
+    "file": "backend/app/api/routes/reports.py",
+    "line": 610,
+    "handler": "delete_draft_report"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans/{scan_id}/results",
+    "file": "backend/app/api/routes/scan_results.py",
+    "line": 114,
+    "handler": "get_scan_results"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/doctor/scans/{scan_id}/doctor-review",
+    "file": "backend/app/api/routes/scan_results.py",
+    "line": 226,
+    "handler": "update_doctor_review"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans/{scan_id}/audit-log",
+    "file": "backend/app/api/routes/scan_results.py",
+    "line": 293,
+    "handler": "get_scan_audit_log"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scans/{scan_id}/schedule-followup",
+    "file": "backend/app/api/routes/scan_results.py",
+    "line": 309,
+    "handler": "schedule_followup"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 508,
+    "handler": "list_doctor_scans"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scans/upload",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 577,
+    "handler": "upload_scan_image"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scans/analyze",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 672,
+    "handler": "analyze_scan"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans/{scan_id}",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 1124,
+    "handler": "get_scan"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/doctor/scans/{scan_id}",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 1184,
+    "handler": "delete_scan"
+  },
+  {
+    "method": "POST",
+    "path": "/api/doctor/scans/draft",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 1209,
+    "handler": "save_draft"
+  },
+  {
+    "method": "GET",
+    "path": "/api/doctor/scans/{scan_id}/primary-image",
+    "file": "backend/app/api/routes/scans.py",
+    "line": 1246,
+    "handler": "get_scan_primary_image"
+  }
+]

@@ -1,0 +1,100 @@
+{
+  "purpose": "smoke",
+  "clinical_validation": false,
+  "limitations": "Smoke data may overlap training. Held-out checks rely on manifest provenance; independent clinical validation is still required.",
+  "module": "breast",
+  "classes": [
+    "negative",
+    "positive"
+  ],
+  "test_images": 16,
+  "test_patients": 16,
+  "source_kinds": [
+    "synthetic"
+  ],
+  "weight_sha256": "399212f6ae81c436436343ddb38ed9722a68773febb238ef3152c9b943c0b06d",
+  "manifest_sha256": "01e6ec28dc6ad27449dab510c7e3f0098848bf96e4a0325ab9f2fabad6ae6c78",
+  "threshold": 0.18,
+  "created_at": "2026-09-30T10:00:36.907141+00:00",
+  "metrics": {
+    "accuracy": 0.5,
+    "macro_f1": 0.3333333333333333,
+    "confusion_matrix": [
+      [
+        0,
+        8
+      ],
+      [
+        0,
+        8
+      ]
+    ],
+    "brier_multiclass": 0.42373676986064357,
+    "sensitivity": 1.0,
+    "specificity": 0.0,
+    "roc_auc": 1.0,
+    "brier_binary": 0.21186838493032178
+  },
+  "top_class_calibration_bins": [
+    {
+      "lower": 0.0,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.1,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.2,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.3,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.4,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.5,
+      "count": 9,
+      "mean_confidence": 0.5596974624527825,
+      "accuracy": 0.1111111111111111
+    },
+    {
+      "lower": 0.6,
+      "count": 6,
+      "mean_confidence": 0.6612124939759573,
+      "accuracy": 1.0
+    },
+    {
+      "lower": 0.7,
+      "count": 1,
+      "mean_confidence": 0.7465574741363525,
+      "accuracy": 1.0
+    },
+    {
+      "lower": 0.8,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.9,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    }
+  ]
+}

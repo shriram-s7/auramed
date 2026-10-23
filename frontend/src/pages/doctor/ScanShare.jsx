@@ -1,3 +1,4 @@
+import SecureImage from '../../components/common/SecureImage'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -219,7 +220,7 @@ function ScanShare() {
                       <span className="text-xs text-slate-400 font-medium">Loading scan image...</span>
                     </div>
                   ) : displayImage ? (
-                    <img
+                    <SecureImage
                       src={displayImage.startsWith('data:') || displayImage.startsWith('http') ? displayImage : `data:image/png;base64,${displayImage}`}
                       alt="Diagnostic Scan"
                       className="h-full w-full object-contain"

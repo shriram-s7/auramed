@@ -1,0 +1,17 @@
+image_path,label,patient_id,split,source_kind
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_000.png,0,synthetic-pcos-0,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_001.png,0,synthetic-pcos-1,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_002.png,0,synthetic-pcos-2,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_003.png,0,synthetic-pcos-3,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_004.png,0,synthetic-pcos-4,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_005.png,0,synthetic-pcos-5,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_006.png,0,synthetic-pcos-6,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/Normal/ultrasound_normal_007.png,0,synthetic-pcos-7,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_000.png,1,synthetic-pcos-8,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_001.png,1,synthetic-pcos-9,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_002.png,1,synthetic-pcos-10,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_003.png,1,synthetic-pcos-11,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_004.png,1,synthetic-pcos-12,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_005.png,1,synthetic-pcos-13,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_006.png,1,synthetic-pcos-14,test,synthetic
+../../training/data/pcos/raw/synthetic_pcos/PCOS/ultrasound_pcos_007.png,1,synthetic-pcos-15,test,synthetic

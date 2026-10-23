@@ -14,6 +14,7 @@ import { SCAN_MODULES, getReferenceRanges } from '../../config/scanModules'
 import { SCAN_TEST_CASES } from '../../config/scanTestCases'
 import { validateClinicalInputs } from '../../utils/scanValidation'
 import { fetchPatientDetail } from '../../services/patientDetailService'
+import api from '../../services/api'
 import { analyzeScan, saveScanDraft } from '../../services/scanService'
 
 const OTHER_MODULES = {
@@ -97,6 +98,8 @@ function ScanModule({ defaultModule }) {
   const [toast, setToast] = useState(null)
 
   const patientId = searchParams.get('patientId')
+  const visitId = searchParams.get('visitId')
+  const [draftId, setDraftId] = useState(visitId || null)
 
   useEffect(() => {
     if (!patientId) {
@@ -105,33 +108,19 @@ function ScanModule({ defaultModule }) {
     }
     fetchPatientDetail(patientId).then((res) => {
       const p = res.data.patient
-      setPatient({ id: p.id, full_name: p.full_name, patient_code: p.patient_code, age: p.age, gender: p.gender })
+      if ((images.length || Object.keys(values).length) && !window.confirm('Switch patient and clear the current image inputs? Save a draft first to keep them.')) return
+    setPatient({ id: p.id, full_name: p.full_name, patient_code: p.patient_code, age: p.age, gender: p.gender })
     })
   }, [patientId])
 
   useEffect(() => {
-    const raw = localStorage.getItem(draftKey(module, patientId))
-    if (raw) {
-      try {
-        setValues(syncAliases(JSON.parse(raw), module))
-      } catch {
-        // ignore corrupt draft
-      }
-    } else {
-      setValues({})
-    }
-    setImages([])
-    setShowErrors(false)
-    setStep(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [module])
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      localStorage.setItem(draftKey(module, patientId), JSON.stringify(values))
-    }, 500)
-    return () => clearTimeout(t)
-  }, [values, module, patientId])
+    let active = true
+    setValues({}); setImages([]); setShowErrors(false); setStep(1); setDraftId(visitId || null)
+    if (visitId) api.get(`/doctor/workflow/visits/${visitId}`).then(r => {
+      if (active && r.data.patient_id === patientId && r.data.module === module) setValues(syncAliases(r.data.inputs, module))
+    }).catch(() => { if (active) setToast('Unable to resume this visit.') })
+    return () => { active = false }
+  }, [module, patientId, visitId])
 
   const handleChange = useCallback((key, value) => {
     setValues((v) => {
@@ -146,6 +135,7 @@ function ScanModule({ defaultModule }) {
     setPatient({ id: p.id, full_name: p.full_name, patient_code: p.patient_code, age: p.age, gender: p.gender })
     const next = new URLSearchParams(searchParams)
     next.set('patientId', p.id)
+    next.delete('visitId')
     setSearchParams(next)
   }
 
@@ -161,8 +151,9 @@ function ScanModule({ defaultModule }) {
     setSavingDraft(true)
     try {
       const draftInputs = syncAliases(values, module)
-      localStorage.setItem(draftKey(module, patientId), JSON.stringify(draftInputs))
-      await saveScanDraft({ module, patientId: patient.id, clinicalInputs: draftInputs })
+      const saved = await saveScanDraft({ module, patientId: patient.id, clinicalInputs: draftInputs, scanId: draftId })
+      setDraftId(saved.data.scan_id)
+      setSearchParams({ patientId: patient.id, visitId: saved.data.scan_id })
       setToast('Draft saved.')
     } catch (err) {
       setToast(err.response?.data?.detail || 'Could not save draft.')
@@ -203,6 +194,7 @@ function ScanModule({ defaultModule }) {
       const submissionInputs = syncAliases(values, module)
       const res = await analyzeScan({
         module,
+        scanId: draftId,
         patientId: patient.id,
         clinicalInputs: submissionInputs,
         imageQuality: values.image_quality || values.sample_adequacy,
@@ -210,7 +202,7 @@ function ScanModule({ defaultModule }) {
         additionalImages: images.slice(1).map((i) => i.file),
       })
       localStorage.removeItem(draftKey(module, patientId))
-      navigate(`/doctor/scan/${module}/results/${res.data.scan_id}`)
+      navigate(`/doctor/visits/${res.data.scan_id}`)
     } catch (err) {
       setStep(1)
       setToast(err.response?.data?.detail || 'Analysis failed. Please try again.')
@@ -239,8 +231,8 @@ function ScanModule({ defaultModule }) {
             <ChevronRight size={12} />
             <span className="text-primary">{moduleConfig.label}</span>
           </div>
-          <h1 className="mt-1 text-xl font-bold text-primary">{moduleConfig.label} - Scan Workbench</h1>
-          <p className="mt-1 max-w-2xl text-sm text-primary/50">{moduleConfig.subtitle}</p>
+          <h1 className="mt-1 text-xl font-bold text-primary">{moduleConfig.label} · Research image tool</h1>
+          <p className="mt-1 max-w-2xl text-sm text-primary/50">Investigational analysis of one JPEG or PNG image. Return to the visit to record your clinical assessment.</p>
         </div>
 
         <div className="flex items-start gap-2">
@@ -283,12 +275,12 @@ function ScanModule({ defaultModule }) {
         <ImageUploadPanel moduleConfig={moduleConfig} images={images} onImagesChange={setImages} />
 
         <div className="rounded-xl border border-border bg-surface p-4">
-          <ClinicalInputForm moduleKey={module} values={values} onChange={handleChange} showErrors={showErrors} onLoadTestCase={handleLoadTestCase} />
+          <ClinicalInputForm moduleKey={module} values={values} onChange={handleChange} showErrors={showErrors} />
         </div>
 
         <div className="space-y-6">
-          <ReferenceImagesPanel moduleConfig={moduleConfig} />
-          <ReferenceRangesPanel ranges={getReferenceRanges(module)} />
+
+
           <ValidationPanel errors={validation.errors} imageUploaded={imageUploaded} />
         </div>
       </div>

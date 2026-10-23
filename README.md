@@ -1,5 +1,18 @@
 # AuraMed
 
+## AuraMed 2.0 care-coordination demo
+
+Start `start_care_demo.bat`, then open http://127.0.0.1:5175. Sign in with
+`care.demo@auramed.example` / `CareDemo@2026`.
+This uses an isolated, persistent synthetic dataset and message previews.
+The main doctor workspace now tracks review, referrals, appointments, contact preferences,
+message status and operational metrics. Existing clinical pages remain available.
+
+See [remaining-work status and deployment prerequisites](docs/REMAINING_WORK_HANDOFF.md).
+
+See [the demo walkthrough and real messaging setup](docs/CARE_DEMO_GUIDE.md).
+Real email/SMS/WhatsApp needs configured providers; previews are never marked delivered.
+
 Clinical decision support platform for women's health screening across three modules: **breast cancer**, **cervical cancer**, and **PCOS**. Doctors upload scans and clinical data, AuraMed combines deep-learning image models with validated clinical formulas, and produces risk scores, reasoning, trajectories, and PDF reports. Patients get their own portal.
 
 ## Stack

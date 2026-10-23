@@ -1,0 +1,17 @@
+image_path,label,patient_id,split,source_kind
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0001_benign.png,0,synthetic-breast-0,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0002_benign.png,0,synthetic-breast-1,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0004_benign.png,0,synthetic-breast-2,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0005_benign.png,0,synthetic-breast-3,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0007_benign.png,0,synthetic-breast-4,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0008_benign.png,0,synthetic-breast-5,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0010_benign.png,0,synthetic-breast-6,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0011_benign.png,0,synthetic-breast-7,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0000_malignant.png,1,synthetic-breast-8,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0003_malignant.png,1,synthetic-breast-9,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0006_malignant.png,1,synthetic-breast-10,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0009_malignant.png,1,synthetic-breast-11,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0012_malignant.png,1,synthetic-breast-12,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0015_malignant.png,1,synthetic-breast-13,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0018_malignant.png,1,synthetic-breast-14,test,synthetic
+../../training/data/breast/raw/synthetic_cbis_ddsm/images/synth_mammo_0021_malignant.png,1,synthetic-breast-15,test,synthetic

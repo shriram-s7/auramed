@@ -1,0 +1,126 @@
+{
+  "purpose": "smoke",
+  "clinical_validation": false,
+  "limitations": "Smoke data may overlap training. Held-out checks rely on manifest provenance; independent clinical validation is still required.",
+  "module": "cervical",
+  "classes": [
+    "Dyskeratotic",
+    "Koilocytotic",
+    "Metaplastic",
+    "Parabasal",
+    "Normal"
+  ],
+  "test_images": 20,
+  "test_patients": 20,
+  "source_kinds": [
+    "synthetic"
+  ],
+  "weight_sha256": "791e4a9ebae2e653129a9c214b5ac9de9f2844ded6ebc12722ffe4780f2fb8c0",
+  "manifest_sha256": "35ede13760224512e8f0ae3f04b63dd7ea6d1f7ba54c3eb12b409d01f075c5dd",
+  "threshold": "argmax",
+  "created_at": "2026-09-30T10:00:43.295187+00:00",
+  "metrics": {
+    "accuracy": 0.3,
+    "macro_f1": 0.21754385964912276,
+    "confusion_matrix": [
+      [
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        2
+      ]
+    ],
+    "brier_multiclass": 0.9921331839798221
+  },
+  "top_class_calibration_bins": [
+    {
+      "lower": 0.0,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.1,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.2,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.3,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    },
+    {
+      "lower": 0.4,
+      "count": 1,
+      "mean_confidence": 0.4495696425437927,
+      "accuracy": 0.0
+    },
+    {
+      "lower": 0.5,
+      "count": 5,
+      "mean_confidence": 0.5476363301277161,
+      "accuracy": 0.4
+    },
+    {
+      "lower": 0.6,
+      "count": 1,
+      "mean_confidence": 0.6817655563354492,
+      "accuracy": 0.0
+    },
+    {
+      "lower": 0.7,
+      "count": 9,
+      "mean_confidence": 0.755351357989841,
+      "accuracy": 0.2222222222222222
+    },
+    {
+      "lower": 0.8,
+      "count": 4,
+      "mean_confidence": 0.8651894778013229,
+      "accuracy": 0.5
+    },
+    {
+      "lower": 0.9,
+      "count": 0,
+      "mean_confidence": null,
+      "accuracy": null
+    }
+  ]
+}
