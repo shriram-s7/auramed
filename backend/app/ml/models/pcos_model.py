@@ -51,26 +51,16 @@ def load_pcos_model(model_path: str) -> PCOSVisionModel:
     """
     model = PCOSVisionModel()
 
-    if os.path.exists(model_path):
-        try:
-            state_dict = torch.load(model_path, map_location="cpu", weights_only=False)
-            if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
-                state_dict = state_dict["model_state_dict"]
-            # Handle prefix stripping
-            cleaned_state = {}
-            for k, v in state_dict.items():
-                new_k = k.replace("network.", "") if k.startswith("network.") else k
-                cleaned_state[new_k] = v
-            model.load_state_dict(cleaned_state, strict=False)
-            logger.info("Successfully loaded PCOS ultrasound model weights from %s", model_path)
-        except Exception as e:
-            logger.warning("Failed to load PCOS weights from %s: %s. Using development weights.", model_path, str(e))
-    else:
-        logger.warning(
-            "PCOS model weights not found at %s. Using random weights for development. "
-            "Results will not be clinically meaningful until real trained weights are provided.",
-            model_path,
-        )
+    if not os.path.isfile(model_path):
+        raise FileNotFoundError(f"Trained weights unavailable: {model_path}")
+    try:
+        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+        if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
+            state_dict = state_dict["model_state_dict"]
+        state_dict = {k.removeprefix("network."): v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict, strict=True)
+    except Exception as exc:
+        raise RuntimeError("Trained weights could not be loaded; inference is unavailable") from exc
 
     model.eval()
     return model
@@ -173,19 +163,9 @@ def run_pcos_inference(
         pcos_probability = round(float(probs[1].item()), 4)
         healthy_probability = round(float(probs[0].item()), 4)
 
-    # Evaluate Rotterdam image criterion
-    if pcos_probability > 0.55:
-        image_criterion_met = True
-        morphology_findings = (
-            f"Ultrasound deep learning model detected polycystic ovarian morphology ({pcos_probability:.1%} confidence). "
-            "Visual features indicate peripheral follicle clustering ('string of pearls') and stromal echogenicity."
-        )
-    else:
-        image_criterion_met = False
-        morphology_findings = (
-            f"Ultrasound deep learning model found predominantly normal ovarian morphology ({healthy_probability:.1%} normal confidence). "
-            "No dominant peripheral follicle clustering pattern detected."
-        )
+    # This is a research flag, not a clinician-confirmed diagnostic criterion.
+    image_criterion_met = pcos_probability > 0.55
+    morphology_findings = f'Investigational class: {predicted_class}; score {pcos_probability:.4f}. Anatomical findings require clinician review.'
 
     # Generate Grad-CAM (blended JPEG, standalone heatmap PNG, peak coords)
     gradcam_result = generate_pcos_gradcam(model, input_tensor.clone(), pil_img)

@@ -133,7 +133,7 @@ def compute_fusion(
         elif final_score <= 0.80:
             final_risk_level = "likely"
         else:
-            final_risk_level = "confirmed"
+            final_risk_level = "likely"
 
     else:
         if final_score < 0.30:

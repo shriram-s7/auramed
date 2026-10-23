@@ -47,24 +47,15 @@ def load_breast_model(model_path: str) -> BreastCancerModel:
     """
     model = BreastCancerModel()
 
-    if os.path.exists(model_path):
-        try:
-            state_dict = torch.load(model_path, map_location="cpu", weights_only=False)
-            if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
-                state_dict = state_dict["model_state_dict"]
-            model.load_state_dict(state_dict)
-            logger.info("Successfully loaded breast cancer model weights from %s", model_path)
-        except Exception as e:
-            logger.warning(
-                "Failed to load weights from %s: %s. Using development weights.",
-                model_path, str(e)
-            )
-    else:
-        logger.warning(
-            "Breast model weights not found at %s. Using random weights for development. "
-            "Results will not be clinically meaningful until real trained weights are provided.",
-            model_path,
-        )
+    if not os.path.isfile(model_path):
+        raise FileNotFoundError(f"Trained weights unavailable: {model_path}")
+    try:
+        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+        if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
+            state_dict = state_dict["model_state_dict"]
+        model.load_state_dict(state_dict, strict=True)
+    except Exception as exc:
+        raise RuntimeError("Trained weights could not be loaded; inference is unavailable") from exc
 
     model.eval()
     return model
@@ -171,38 +162,8 @@ def run_breast_inference(
     gradcam_result = generate_breast_gradcam(model, input_tensor.clone(), pil_img)
     grad_cam_base64 = gradcam_result.get("grad_cam_base64", "")
 
-    # Key findings based on score ranges
-    key_findings: List[str] = []
-    if image_score > 0.80:
-        key_findings.append("High density suspicious region detected")
-    if image_score > 0.70:
-        key_findings.append("Irregular mass characteristics present")
-    if image_score > 0.60:
-        key_findings.append("Possible architectural distortion")
-    if image_score > 0.50:
-        key_findings.append("Borderline density irregularity")
-    if image_score < 0.30:
-        key_findings.append("No significant suspicious features")
-
-    if not key_findings:
-        key_findings.append("Nonspecific low-to-moderate density variations")
-
-    # Generate interpretation
-    if image_score >= 0.70:
-        model_interpretation = (
-            f"ResNet-50 visual analysis indicates elevated suspicion ({image_score:.1%}) "
-            "with localized architectural distortion and high density features."
-        )
-    elif image_score >= 0.40:
-        model_interpretation = (
-            f"ResNet-50 visual analysis demonstrates intermediate density patterns ({image_score:.1%}). "
-            "Clinical correlation and targeted imaging recommended."
-        )
-    else:
-        model_interpretation = (
-            f"ResNet-50 visual analysis demonstrates predominantly benign parenchymal features ({image_score:.1%}) "
-            "with no dominant suspicious masses."
-        )
+    key_findings = []
+    model_interpretation = f'Investigational classifier score: {image_score:.4f}. No anatomical findings are measured by this classifier.'
 
     return {
         "image_score": image_score,

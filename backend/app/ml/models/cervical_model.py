@@ -65,24 +65,15 @@ def load_cervical_model(model_path: str):
         num_classes=5,
     )
 
-    if os.path.exists(model_path):
-        try:
-            state_dict = torch.load(model_path, map_location="cpu", weights_only=False)
-            if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
-                state_dict = state_dict["model_state_dict"]
-            model.load_state_dict(state_dict)
-            logger.info("Successfully loaded cervical cytology ViT weights from %s", model_path)
-        except Exception as e:
-            logger.warning(
-                "Failed to load cervical weights from %s: %s. Using development weights.",
-                model_path, str(e),
-            )
-    else:
-        logger.warning(
-            "Cervical model weights not found at %s. Using random weights for development. "
-            "Results will not be clinically meaningful until real trained weights are provided.",
-            model_path,
-        )
+    if not os.path.isfile(model_path):
+        raise FileNotFoundError(f"Trained weights unavailable: {model_path}")
+    try:
+        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+        if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
+            state_dict = state_dict["model_state_dict"]
+        model.load_state_dict(state_dict, strict=True)
+    except Exception as exc:
+        raise RuntimeError("Trained weights could not be loaded; inference is unavailable") from exc
 
     model.eval()
     return model
