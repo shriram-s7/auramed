@@ -4,8 +4,8 @@ export const SCAN_MODULES = {
     label: 'Breast Cancer',
     subtitle: 'AI-assisted mammogram analysis fused with clinical risk factors to support breast cancer screening decisions.',
     accent: 'pink',
-    acceptedFormats: 'DICOM, JPEG, PNG',
-    multiView: true,
+    acceptedFormats: 'JPEG, PNG',
+    multiView: false,
     viewOptions: ['R MLO', 'R CC', 'L MLO', 'L CC'],
     referenceTabs: [
       {

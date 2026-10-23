@@ -1,3 +1,4 @@
+import SecureImage from '../../common/SecureImage'
 import { useState } from 'react'
 import { Info, Maximize2, ScanSearch, X, ZoomIn } from 'lucide-react'
 
@@ -19,9 +20,9 @@ function HeatmapLegend() {
 function HeatmapComposite({ imageUrl, heatmapB64, showHeatmap }) {
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <img src={imageUrl} alt="Scan" className="absolute inset-0 h-full w-full object-cover" />
+      <SecureImage src={imageUrl} alt="Scan" className="absolute inset-0 h-full w-full object-cover" />
       {showHeatmap && heatmapB64 && (
-        <img
+        <SecureImage
           src={`data:image/png;base64,${heatmapB64}`}
           alt="Grad-CAM attention heatmap (red = high attention, blue = low attention)"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
@@ -112,7 +113,7 @@ function AiFocusPanel({ imageUrl, module, result }) {
     )
   }
 
-  return <img src={imageUrl} alt="Scan" className="max-h-full max-w-full object-contain" />
+  return <SecureImage src={imageUrl} alt="Scan" className="max-h-full max-w-full object-contain" />
 }
 
 function ConfidenceBar({ value }) {
@@ -236,7 +237,7 @@ function ImageAnalysisSection({ result, sectionRef }) {
       <div className="mt-2 grid grid-cols-2 gap-3">
         <div className="relative flex h-44 flex-col items-center justify-center overflow-hidden rounded-lg border border-border bg-slate-950">
           {imageUrl ? (
-            <img
+            <SecureImage
               src={imageUrl}
               alt="Uploaded scan"
               className="max-h-full max-w-full object-contain"

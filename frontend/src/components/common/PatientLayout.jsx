@@ -15,7 +15,7 @@ export default function PatientLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try {
       const saved = localStorage.getItem('auramed_patient_sidebar_open')
-      return saved !== null ? saved === 'true' : true
+      return window.innerWidth >= 768 && (saved !== null ? saved === 'true' : true)
     } catch {
       return true
     }

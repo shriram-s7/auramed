@@ -1,3 +1,4 @@
+import SecureImage from '../../common/SecureImage'
 import { useState } from 'react'
 import { formatPatientAgeGender } from '../../../utils/formatAge'
 import {
@@ -214,7 +215,7 @@ function ReportPdfViewer({ report, onDownloadPdf }) {
                     <div className="mt-3 grid grid-cols-2 gap-3 max-w-lg">
                       {(report?.image_url || report?.image_path || report?.content?.imaging_findings?.main_image_url) && (
                         <div className="rounded border border-slate-200 bg-slate-950 p-1">
-                          <img
+                          <SecureImage
                             src={
                               report.content?.imaging_findings?.main_image_url ||
                               report.image_url ||
@@ -228,7 +229,7 @@ function ReportPdfViewer({ report, onDownloadPdf }) {
                       )}
                       {(report?.grad_cam_base64 || report?.gradcam_heatmap_b64 || report?.content?.imaging_findings?.grad_cam_base64 || report?.content?.imaging_findings?.gradcam_heatmap_b64) && (
                         <div className="rounded border border-slate-200 bg-slate-950 p-1">
-                          <img
+                          <SecureImage
                             src={(() => {
                               const src = report.grad_cam_base64 || report.gradcam_heatmap_b64 || report.content?.imaging_findings?.grad_cam_base64 || report.content?.imaging_findings?.gradcam_heatmap_b64
                               return src.startsWith('data:') ? src : `data:image/png;base64,${src}`

@@ -38,19 +38,7 @@ export default function DoctorNavbar({
           <Menu size={20} />
         </button>
 
-        <div className="relative flex-1">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-primary/40"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search patients, scans, reports..."
-            className="w-full rounded-lg border border-border bg-background py-1.5 pl-9 pr-3 text-sm text-primary placeholder:text-primary/40 outline-none focus:ring-2 focus:ring-accent/40 transition"
-          />
-        </div>
+        <Link to="/doctor/patients" className="text-sm font-semibold text-teal-800">Find a patient →</Link>
       </div>
 
       {/* Right section: Notifications & Profile */}
@@ -110,13 +98,13 @@ export default function DoctorNavbar({
             }}
             className="flex items-center gap-2.5 rounded-lg py-1 pl-1.5 pr-2.5 hover:bg-background transition focus:outline-none"
           >
-            <InitialsAvatar name={doctor?.full_name || 'Dr. Mehta'} size={32} />
+            <InitialsAvatar name={doctor?.full_name || 'Clinician'} size={32} />
             <div className="hidden text-left sm:block">
               <p className="text-xs font-bold text-primary leading-tight">
-                {doctor?.full_name || 'Dr. Kavitha Mehta'}
+                {doctor?.full_name || 'Clinician'}
               </p>
               <p className="text-[10px] text-primary/50 leading-tight">
-                {doctor?.registration_number || 'TNMC123456'}
+                {doctor?.registration_number || 'Profile loading'}
               </p>
             </div>
             <ChevronDown size={14} className="text-primary/40 hidden sm:block" />
@@ -124,8 +112,8 @@ export default function DoctorNavbar({
           {profileOpen && (
             <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-border bg-surface p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100">
               <div className="px-3 py-2 border-b border-border/50 sm:hidden">
-                <p className="text-xs font-bold text-primary">{doctor?.full_name || 'Dr. Mehta'}</p>
-                <p className="text-[10px] text-primary/50">{doctor?.registration_number || 'TNMC123456'}</p>
+                <p className="text-xs font-bold text-primary">{doctor?.full_name || 'Clinician'}</p>
+                <p className="text-[10px] text-primary/50">{doctor?.registration_number || 'Profile loading'}</p>
               </div>
               <Link
                 to="/doctor/settings"

@@ -1,7 +1,8 @@
 import api from './api'
 
-export function analyzeScan({ module, patientId, clinicalInputs, imageQuality, image, additionalImages = [] }) {
+export function analyzeScan({ module, patientId, clinicalInputs, imageQuality, image, scanId, additionalImages = [] }) {
   const formData = new FormData()
+  if (scanId) formData.append('scan_id', scanId)
   formData.append('module', module)
   formData.append('patient_id', patientId)
   formData.append('clinical_inputs', JSON.stringify(clinicalInputs))
@@ -15,12 +16,13 @@ export function analyzeScan({ module, patientId, clinicalInputs, imageQuality, i
   })
 }
 
-export function saveScanDraft({ module, patientId, clinicalInputs, scanDate }) {
+export function saveScanDraft({ module, patientId, clinicalInputs, scanDate, scanId }) {
   return api.post('/doctor/scans/draft', {
     module,
     patient_id: patientId,
     clinical_inputs: clinicalInputs,
     scan_date: scanDate || undefined,
+    scan_id: scanId || undefined,
   })
 }
 

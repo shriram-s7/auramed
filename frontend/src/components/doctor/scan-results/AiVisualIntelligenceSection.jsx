@@ -1,3 +1,4 @@
+import SecureImage from '../../common/SecureImage'
 import { useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -200,7 +201,7 @@ export default function AiVisualIntelligenceSection({
       >
         {/* Diagnostic Scan Image */}
         {sourceSrc ? (
-          <img
+          <SecureImage
             src={sourceSrc}
             alt="Original Diagnostic Scan"
             className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-300 ease-in-out ${
@@ -223,7 +224,7 @@ export default function AiVisualIntelligenceSection({
           <>
             {/* If fallback to raw standalone heatmap and source scan is present, render source scan underneath */}
             {!isUsingBlended && sourceSrc && (
-              <img
+              <SecureImage
                 src={sourceSrc}
                 alt="Original Diagnostic Scan (Underlay)"
                 className={`absolute inset-0 h-full w-full object-contain ${
@@ -231,7 +232,7 @@ export default function AiVisualIntelligenceSection({
                 }`}
               />
             )}
-            <img
+            <SecureImage
               src={activeHeatmapSrc}
               alt="AI Saliency Grad-CAM Heatmap Overlay"
               className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-300 ease-in-out ${

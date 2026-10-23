@@ -21,7 +21,7 @@ export default function DoctorLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try {
       const saved = localStorage.getItem('auramed_sidebar_open')
-      return saved !== null ? saved === 'true' : true
+      return saved !== null ? saved === 'true' : window.innerWidth >= 768
     } catch {
       return true
     }
@@ -61,13 +61,14 @@ export default function DoctorLayout({ children }) {
       <div className="flex h-screen w-screen overflow-hidden bg-background text-primary antialiased">
         {/* Left: DoctorSidebar (fixed width 220px, full height, overflow-y auto, never collapses unless toggled) */}
         <aside
-          className={`h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out select-none ${
+          className={`absolute z-40 md:relative h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out select-none ${
             sidebarOpen ? 'w-[220px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
           }`}
           aria-hidden={!sidebarOpen}
         >
           <DoctorSidebar doctor={doctor} />
         </aside>
+        {sidebarOpen && <button aria-label="Close navigation" className="absolute inset-0 z-30 bg-black/30 md:hidden" onClick={toggleSidebar} />}
 
         {/* Right: main content area (flex-1, overflow-y auto, full height) */}
         <div className="flex flex-1 flex-col h-full overflow-hidden min-w-0">

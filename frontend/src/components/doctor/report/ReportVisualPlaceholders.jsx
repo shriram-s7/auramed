@@ -1,3 +1,4 @@
+import SecureImage from '../../common/SecureImage'
 import { useState } from 'react'
 import { Eye, Maximize2, Sparkles, X } from 'lucide-react'
 
@@ -41,7 +42,7 @@ function ReportVisualPlaceholders({
           >
             {mainImageUrl ? (
               <>
-                <img
+                <SecureImage
                   src={mainImageUrl}
                   alt="Main Diagnostic Scan"
                   className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
@@ -86,7 +87,7 @@ function ReportVisualPlaceholders({
             >
               {resolvedSecondarySrc ? (
                 <>
-                  <img
+                  <SecureImage
                     src={resolvedSecondarySrc}
                     alt="Secondary Projection"
                     style={secondaryImageUrl ? {} : { filter: 'contrast(125%) brightness(95%)' }}
@@ -132,13 +133,13 @@ function ReportVisualPlaceholders({
               {gradcamSrc ? (
                 <>
                   {isRawColormap && (
-                    <img
+                    <SecureImage
                       src={mainImageUrl}
                       alt="Diagnostic Scan Base"
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   )}
-                  <img
+                  <SecureImage
                     src={gradcamSrc}
                     alt="AI Focus Area Zoomed"
                     className={`h-full w-full object-cover transition duration-200 group-hover:scale-105 ${
@@ -156,7 +157,7 @@ function ReportVisualPlaceholders({
                 </>
               ) : mainImageUrl ? (
                 <>
-                  <img
+                  <SecureImage
                     src={mainImageUrl}
                     alt="AI Focus Zoom"
                     className="h-full w-full object-cover scale-150 transition duration-200 group-hover:scale-160"
@@ -196,7 +197,7 @@ function ReportVisualPlaceholders({
             >
               {resolvedSegmentationSrc ? (
                 <>
-                  <img
+                  <SecureImage
                     src={resolvedSegmentationSrc}
                     alt="AI Segmentation Mask"
                     className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
@@ -260,7 +261,7 @@ function ReportVisualPlaceholders({
               </button>
             </div>
             <div className="flex items-center justify-center p-3 bg-black">
-              <img
+              <SecureImage
                 src={lightboxImg.src}
                 alt={lightboxImg.label}
                 className="max-h-[75vh] w-auto rounded-lg object-contain"
