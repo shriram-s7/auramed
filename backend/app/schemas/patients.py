@@ -56,6 +56,11 @@ class PatientListResponse(BaseModel):
 
 
 class ConsentPayload(BaseModel):
+    record_consent: bool = False
+    research_ai: bool = False
+    sms_notifications: bool = False
+    email_notifications: bool = False
+    whatsapp_notifications: bool = False
     data_storage_and_ai_analysis: bool = False
     share_with_referring_physicians: bool = False
     appointment_reminders: bool = False

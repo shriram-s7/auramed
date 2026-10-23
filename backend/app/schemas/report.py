@@ -111,6 +111,8 @@ class ReportSectionRotterdamCriteria(BaseModel):
 
 
 class ReportContent(BaseModel):
+    workflow_version: int | None = None
+    review: dict[str, Any] = Field(default_factory=dict)
     template: str = "Standard Clinical Report"
     options: ReportOptions = Field(default_factory=ReportOptions)
     patient_information: ReportSectionPatientInfo | None = None

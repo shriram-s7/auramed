@@ -73,6 +73,7 @@ class ScanDraftResponse(BaseModel):
 
 
 class ScanDraftRequest(BaseModel):
+    scan_id: uuid.UUID | None = None
     patient_id: uuid.UUID
     module: str
     clinical_inputs: dict
