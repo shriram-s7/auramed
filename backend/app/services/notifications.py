@@ -196,7 +196,7 @@ def notify_patient_report_shared(
 
         # 2. Email Notification if enabled
         # Default is True unless explicitly turned off
-        email_enabled = consent.get("email_notifications", True) if isinstance(consent, dict) else True
+        email_enabled = consent.get("email_notifications", False) if isinstance(consent, dict) else True
         if email_enabled is not False:
             email_notif = create_notification(
                 recipient_user_id=user_id,
@@ -219,72 +219,16 @@ def notify_patient_report_shared(
     return notifications
 
 
-def notify_patient_appointment_reminder(
-    patient_id: Any,
-    appointment_id: Any,
-    db: Optional[Session] = None,
-) -> list[Notification]:
-    """Creates in-app and email/SMS notification for appointment reminder."""
+def notify_patient_appointment_reminder(patient_id, appointment_id, db=None):
+    from app.models.appointment import Appointment
+    from app.services.care_messaging import queue_appointment_messages
     session, should_close = _resolve_session(db)
-    notifications = []
     try:
-        user_id, _, phone = _resolve_patient_user_id_and_meta(patient_id, session)
-        if not user_id:
-            logger.warning(f"notify_patient_appointment_reminder: patient {patient_id} not found")
-            return notifications
-
-        # 1. In-App Notification
-        in_app = create_notification(
-            recipient_user_id=user_id,
-            recipient_type="patient",
-            notification_type="APPOINTMENT_REMINDER",
-            title="Upcoming Appointment Reminder",
-            message="You have an upcoming medical appointment scheduled.",
-            delivery_method="in_app",
-            delivery_status="sent",
-            related_resource_type="appointment",
-            related_resource_id=str(appointment_id),
-            db=session,
-        )
-        if in_app:
-            notifications.append(in_app)
-
-        # 2. Email Notification
-        email_notif = create_notification(
-            recipient_user_id=user_id,
-            recipient_type="patient",
-            notification_type="APPOINTMENT_REMINDER",
-            title="Appointment Reminder - AuraMed",
-            message="This is a reminder for your upcoming medical consultation. Please check your schedule in AuraMed.",
-            delivery_method="email",
-            delivery_status="pending",
-            related_resource_type="appointment",
-            related_resource_id=str(appointment_id),
-            db=session,
-        )
-        if email_notif:
-            notifications.append(email_notif)
-
-        # 3. SMS Notification
-        sms_notif = create_notification(
-            recipient_user_id=user_id,
-            recipient_type="patient",
-            notification_type="APPOINTMENT_REMINDER",
-            title="AuraMed Appointment Reminder",
-            message=f"Reminder: You have an upcoming appointment scheduled. Appointment ID: {appointment_id}",
-            delivery_method="sms",
-            delivery_status="pending",
-            related_resource_type="appointment",
-            related_resource_id=str(appointment_id),
-            db=session,
-        )
-        if sms_notif:
-            notifications.append(sms_notif)
-
+        appt = session.get(Appointment, uuid.UUID(str(appointment_id)))
+        return queue_appointment_messages(session, appt) if appt else []
     finally:
         if should_close:
             session.close()
-    return notifications
 
 
 def notify_doctor_verification_approved(
@@ -460,200 +404,45 @@ from apscheduler.triggers.interval import IntervalTrigger
 scheduler = AsyncIOScheduler()
 
 
-def process_pending_notifications(db: Optional[Session] = None) -> list[Notification]:
-    """
-    Checks for pending email/SMS notification records and delivers them.
-    Emails are sent via EmailService with clinical HTML templates or logged in dev mode.
-    Handles retries up to 3 times before marking as permanently_failed.
-    """
+def process_pending_notifications(db=None):
+    from app.services.care_messaging import process_outbox
     session, should_close = _resolve_session(db)
-    processed = []
-    email_service = EmailService()
-
     try:
-        pending_items = (
-            session.query(Notification)
-            .filter(
-                Notification.delivery_status == "pending",
-                Notification.delivery_method.in_(["email", "sms"]),
-            )
-            .all()
-        )
-        for item in pending_items:
-            log_line = (
-                f"[NOTIFICATION DELIVERY] [{item.delivery_method.upper()}] "
-                f"ID: {item.id} | Recipient User ID: {item.recipient_user_id} ({item.recipient_type}) | "
-                f"Type: {item.notification_type} | Title: '{item.title}' | "
-                f"Message: '{item.message}' | Resource: {item.related_resource_type}:{item.related_resource_id}"
-            )
-            print(log_line)
-            logger.info(log_line)
-
-            if item.delivery_method == "email":
-                user = session.query(User).filter(User.id == item.recipient_user_id).first()
-                if not user or not user.email:
-                    logger.warning("Recipient user or email missing for notification %s", item.id)
-                    item.delivery_status = "permanently_failed"
-                    continue
-
-                # Resolve recipient profile for personalization
-                patient_name = "Valued Patient"
-                doctor_name = "Attending Physician"
-                if item.recipient_type == "patient":
-                    pat = session.query(PatientProfile).filter(PatientProfile.user_id == item.recipient_user_id).first()
-                    if pat and pat.full_name:
-                        patient_name = pat.full_name
-                elif item.recipient_type == "doctor":
-                    doc = session.query(DoctorProfile).filter(DoctorProfile.user_id == item.recipient_user_id).first()
-                    if doc and doc.full_name:
-                        doctor_name = doc.full_name
-
-                # Select appropriate template
-                ntype = (item.notification_type or "").upper()
-                if ntype == "REPORT_SHARED":
-                    rep_date = item.created_at.strftime("%Y-%m-%d") if item.created_at else datetime.utcnow().strftime("%Y-%m-%d")
-                    html_content = report_shared_email(
-                        patient_name=patient_name,
-                        doctor_name=doctor_name,
-                        module="Screening",
-                        report_date=rep_date,
-                        portal_url=settings.patient_portal_url,
-                    )
-                elif ntype == "APPOINTMENT_REMINDER":
-                    appt_date = datetime.utcnow().strftime("%Y-%m-%d")
-                    html_content = appointment_reminder_email(
-                        patient_name=patient_name,
-                        appointment_type="Diagnostic Follow-up",
-                        doctor_name=doctor_name,
-                        appointment_date=appt_date,
-                        appointment_time="10:00 AM",
-                        location="AuraMed Clinical Facility",
-                    )
-                elif ntype == "DOCTOR_VERIFICATION_APPROVED":
-                    html_content = doctor_verified_email(
-                        doctor_name=doctor_name,
-                        login_url=f"{settings.cors_origins.split(',')[0]}/login",
-                    )
-                elif ntype == "DOCTOR_VERIFICATION_REJECTED":
-                    reason_clean = item.message.split("Reason:")[-1].strip() if "Reason:" in item.message else item.message
-                    html_content = doctor_rejected_email(
-                        doctor_name=doctor_name,
-                        reason=reason_clean,
-                    )
-                elif ntype == "DATA_DELETION_OUTCOME":
-                    html_content = deletion_approved_email(patient_name=patient_name)
-                else:
-                    html_content = (
-                        f"<html><body><h2>{item.title}</h2><p>{item.message}</p>"
-                        f"<p><small>AuraMed Clinical Intelligence</small></p></body></html>"
-                    )
-
-                success = email_service.send_email(
-                    to_email=user.email,
-                    subject=item.title,
-                    html_content=html_content,
-                    text_content=item.message,
-                )
-
-                if success:
-                    item.delivery_status = "sent"
-                    item.sent_at = datetime.now(timezone.utc)
-                    processed.append(item)
-                else:
-                    item.retry_count = (getattr(item, "retry_count", 0) or 0) + 1
-                    if item.retry_count > 3:
-                        item.delivery_status = "permanently_failed"
-                        logger.error("Notification %s permanently failed after %d retries.", item.id, item.retry_count)
-                    else:
-                        item.delivery_status = "failed"
-                        logger.warning("Notification %s delivery failed, retry count: %d", item.id, item.retry_count)
-
-            elif item.delivery_method == "sms":
-                # Simulated SMS delivery
-                item.delivery_status = "sent"
-                item.sent_at = datetime.now(timezone.utc)
-                processed.append(item)
-
-        if processed or pending_items:
-            session.commit()
-    except Exception as e:
-        logger.error(f"Error executing process_pending_notifications: {e}", exc_info=True)
-        try:
-            session.rollback()
-        except Exception:
-            pass
+        return process_outbox(session)
     finally:
         if should_close:
             session.close()
-    return processed
 
 
-def check_and_schedule_appointment_reminders(
-    reminder_days: int = 1,
-    db: Optional[Session] = None,
-) -> list[Notification]:
-    """
-    Finds scheduled appointments occurring in reminder_days (default tomorrow / 24h)
-    where reminder_sent is False, creates notification records, and marks reminder_sent=True.
-    """
-    from datetime import date, timedelta
-    from app.models.appointment import Appointment
-    from app.models.enums import AppointmentStatus
-
+def check_and_schedule_appointment_reminders(reminder_days=1, db=None):
+    from app.services.care_messaging import queue_due_reminders
     session, should_close = _resolve_session(db)
-    notifications = []
     try:
-        target_date = date.today() + timedelta(days=reminder_days)
-        appointments = (
-            session.query(Appointment)
-            .filter(
-                Appointment.scheduled_date == target_date,
-                Appointment.status == AppointmentStatus.scheduled,
-                (Appointment.reminder_sent == False) | (Appointment.reminder_sent.is_(None)),
-            )
-            .all()
-        )
-
-        for appt in appointments:
-            patient = appt.patient
-            if patient:
-                notifs = notify_patient_appointment_reminder(
-                    patient_id=patient.id,
-                    appointment_id=appt.id,
-                    db=session,
-                )
-                notifications.extend(notifs)
-                appt.reminder_sent = True
-
-        if appointments:
-            session.commit()
-            logger.info("Created reminders for %d appointments scheduled on %s", len(appointments), target_date)
-    except Exception as e:
-        logger.error("Error in check_and_schedule_appointment_reminders: %s", str(e), exc_info=True)
-        try:
-            session.rollback()
-        except Exception:
-            pass
+        return queue_due_reminders(session, reminder_days)
     finally:
         if should_close:
             session.close()
-    return notifications
 
 
 def start_notification_scheduler():
     """Starts APScheduler background jobs for pending notifications and daily appointment reminders."""
+    if not settings.notification_scheduler_enabled:
+        return
     if not scheduler.running:
+        scheduler.add_job(reconcile_care_reminders, trigger=IntervalTrigger(minutes=5),
+                          id='care_reminder_reconciliation', replace_existing=True,
+                          next_run_time=datetime.now(timezone.utc))
         # 1. Process pending notifications every 5 minutes
         scheduler.add_job(
             process_pending_notifications,
-            trigger=IntervalTrigger(minutes=5),
+            trigger=IntervalTrigger(seconds=30),
             id="process_pending_notifications_job",
             replace_existing=True,
         )
         # 2. Daily appointment reminder scan at 8:00 AM
         scheduler.add_job(
             check_and_schedule_appointment_reminders,
-            trigger=CronTrigger(hour=8, minute=0),
+            trigger=CronTrigger(hour=8, minute=0, timezone=settings.clinic_timezone),
             id="daily_appointment_reminders_job",
             replace_existing=True,
         )
@@ -662,6 +451,12 @@ def start_notification_scheduler():
             logger.info("APScheduler notification & reminder engine successfully started.")
         except Exception as e:
             logger.error("Failed to start APScheduler: %s", str(e), exc_info=True)
+
+
+def reconcile_care_reminders():
+    from app.services.care_messaging import queue_catchup_reminders
+    with SessionLocal() as db:
+        queue_catchup_reminders(db)
 
 
 def stop_notification_scheduler():

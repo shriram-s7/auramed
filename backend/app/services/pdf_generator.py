@@ -1058,3 +1058,7 @@ def generate_clinical_report_pdf(report_data: dict) -> bytes:
     })
 
     return generate_report_pdf(report_mock, scan_mock, patient_mock, doctor_mock)
+
+
+# Canonical clinician content is used by both doctor and patient downloads.
+from app.services.clinical_record import clinical_pdf as generate_report_pdf
