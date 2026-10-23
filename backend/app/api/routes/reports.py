@@ -106,19 +106,7 @@ def get_scan_report(
     return format_report_response(db, report)
 
 
-@router.get("/reports")
-def list_doctor_reports(
-    db: Session = Depends(get_db),
-    doctor: DoctorProfile = Depends(get_current_doctor_profile),
-    status_filter: Optional[str] = Query(None, alias="status"),
-):
-    query = db.query(Report).filter(Report.doctor_id == doctor.id)
-    if status_filter and status_filter.lower() != "all":
-        query = query.filter(func.lower(Report.status) == status_filter.lower())
-    reports = query.order_by(Report.created_at.desc()).all()
-    if not reports:
-        reports = db.query(Report).order_by(Report.created_at.desc()).limit(20).all()
-    return [format_report_response(db, r) for r in reports]
+
 
 
 @router.get("/reports/{report_id}", response_model=ReportDetailResponse)
@@ -148,7 +136,7 @@ def patch_report_content(
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
     report = _get_owned_report(db, doctor, report_id)
-    if report.status in (ReportStatus.signed, ReportStatus.addendum):
+    if report.signed_at or report.status != ReportStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Report is digitally signed and locked. Modifications can only be made via addendums."
@@ -217,7 +205,7 @@ def save_report_draft(
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
     report = _get_owned_report(db, doctor, report_id)
-    if report.status in (ReportStatus.signed, ReportStatus.addendum):
+    if report.signed_at or report.status != ReportStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Report is digitally signed and locked. Modifications can only be made via addendums."
@@ -288,81 +276,26 @@ def generate_report_pdf_endpoint(
     )
 
 
-@router.post("/reports/{report_id}/sign")
-def sign_report(
-    report_id: str,
-    db: Session = Depends(get_db),
-    doctor: DoctorProfile = Depends(get_current_doctor_profile),
-):
+@router.post('/reports/{report_id}/sign')
+def sign_report(report_id: str, db: Session = Depends(get_db), doctor: DoctorProfile = Depends(get_current_doctor_profile)):
+    from app.services.clinical_record import review_of, report_content, text_sections
     report = _get_owned_report(db, doctor, report_id)
-    if report.status in (ReportStatus.signed, ReportStatus.addendum):
-        return {
-            "id": str(report.id),
-            "report_id": str(report.id),
-            "status": report.status.value,
-            "signed_at": report.signed_at,
-            "signed_by": f"{doctor.full_name} ({doctor.registration_number})",
-            "report_number": report.report_number,
-            "report": format_report_response(db, report),
-        }
-
-    # Validate report has required sections, populating defaults if missing
-    content = dict(report.content or {})
-    if not (content.get("patient_info") or content.get("patient_information")):
-        content["patient_info"] = {
-            "name": report.patient.full_name if report.patient else "Patient",
-            "code": report.patient.patient_code if report.patient else "P-001",
-        }
-    if not content.get("clinical_summary"):
-        content["clinical_summary"] = "Clinical evaluation performed according to AuraMed multi-modal screening protocol."
-    if not content.get("imaging_findings"):
-        content["imaging_findings"] = "Multimodal diagnostic screening verified by consulting physician."
-    if not content.get("recommendations"):
-        content["recommendations"] = "Routine clinical follow-up as scheduled."
-    report.content = content
-
-    now = datetime.utcnow()
-    report.status = ReportStatus.signed
-    report.signed_at = now
-    report.signed_by = doctor.id
-
-    # Update scan status to reported
-    if report.scan:
+    if not report.signed_at:
+        review = review_of(report.scan)
+        if not review.get('complete') or (report.content or {}).get('workflow_version') != 1:
+            raise HTTPException(422, 'Complete the clinician review before finalizing this report.')
+        if any(not text_sections(report)[k].strip() for k in ('findings', 'assessment', 'plan')):
+            raise HTTPException(422, 'Findings, assessment and next steps are required.')
+        report.status = ReportStatus.signed
+        report.signed_at = datetime.utcnow()
+        report.signed_by = doctor.id
         report.scan.status = ScanStatus.reported
-
-    # Generate & store final PDF path
-    pdf_path = save_report_pdf_file(report, doctor)
-    report.pdf_path = pdf_path
-
-    db.commit()
-    db.refresh(report)
-
-    signed_by_details = f"{doctor.full_name} ({doctor.registration_number})"
-
-    log_action(
-        db,
-        user_id=doctor.user_id,
-        user_type="doctor",
-        action="REPORT_SIGNED",
-        resource_type="report",
-        resource_id=report.id,
-        details={
-            "report_number": report.report_number,
-            "signed_at": now.isoformat(),
-            "signed_by": signed_by_details,
-        },
-    )
-
-    formatted = format_report_response(db, report)
-    return {
-        "id": str(report.id),
-        "report_id": str(report.id),
-        "status": "signed",
-        "signed_at": now,
-        "signed_by": signed_by_details,
-        "report_number": report.report_number,
-        "report": formatted,
-    }
+        report.pdf_path = save_report_pdf_file(report, doctor)
+        db.commit()
+        log_action(db, user_id=doctor.user_id, user_type='doctor', action='REPORT_SIGNED', resource_type='report', resource_id=report.id)
+    return {'id': str(report.id), 'report_id': str(report.id), 'status': report.status.value,
+            'signed_at': report.signed_at, 'signed_by': doctor.full_name, 'report_number': report.report_number,
+            'report': format_report_response(db, report)}
 
 
 @router.post("/reports/{report_id}/approve")
@@ -390,6 +323,8 @@ def add_report_addendum(
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
     report = _get_owned_report(db, doctor, report_id)
+    if not report.signed_at:
+        raise HTTPException(422, 'Finalize the report before adding an addendum.')
     text = (payload.addendum_text or payload.note or payload.content or "").strip()
     if not text:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Addendum text cannot be empty.")
@@ -434,67 +369,22 @@ def add_report_addendum(
     return format_report_response(db, report)
 
 
-@router.post("/reports/{report_id}/share", response_model=ShareReportResponse)
-def share_report(
-    report_id: str,
-    payload: Optional[ShareReportRequest] = None,
-    db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.doctor, UserRole.admin)),
-):
+@router.post('/reports/{report_id}/share', response_model=ShareReportResponse)
+def share_report(report_id: str, payload: Optional[ShareReportRequest] = None, db: Session = Depends(get_db),
+                 user: User = Depends(require_role(UserRole.doctor))):
     doctor = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
-    if not doctor and user.role == UserRole.admin:
-        doctor = db.query(DoctorProfile).first()
-    if not doctor:
-        doctor = DoctorProfile(user_id=user.id, full_name=getattr(user, "full_name", "Physician"), registration_number="DOC-001")
-
+    if not doctor: raise HTTPException(403, 'Clinician account required')
     report = _get_owned_report(db, doctor, report_id)
-    if report.status == ReportStatus.draft:
-        report.status = ReportStatus.approved
-        report.signed_at = datetime.utcnow()
-        report.signed_by = doctor.id
-        if report.scan:
-            report.scan.status = ScanStatus.reported
-
-    if payload is None:
-        payload = ShareReportRequest(share_with_patient=True, delivery_method="portal")
-
-    now = datetime.utcnow()
+    if not report.signed_at or (report.content or {}).get('workflow_version') != 1:
+        raise HTTPException(422, 'Complete review and finalize the report before releasing it.')
+    payload = payload or ShareReportRequest()
+    if payload.delivery_method != 'portal' or payload.share_with_physician:
+        raise HTTPException(422, 'This action supports patient portal release only. Download the PDF for other sharing.')
     report.shared_with_patient = payload.share_with_patient
-    report.status = ReportStatus.shared_with_patient if payload.share_with_patient else ReportStatus.approved
-    report.shared_at = now
+    report.shared_at = datetime.utcnow()
     db.commit()
-
-    if payload.share_with_patient and report.patient_id:
-        try:
-            from app.services.notifications import notify_patient_report_shared
-            notify_patient_report_shared(report.patient_id, report.id, doctor.full_name, db=db)
-        except Exception:
-            pass
-
-    # Log notification creation if email or sms delivery requested
-    details = {
-        "report_number": report.report_number,
-        "delivery_method": payload.delivery_method,
-        "share_with_patient": payload.share_with_patient,
-        "share_with_physician": payload.share_with_physician,
-        "physician_id": payload.physician_id,
-    }
-
-    if payload.delivery_method in ("email", "sms"):
-        details["notification_queued"] = True
-        details["recipient"] = report.patient.full_name if report.patient else "Patient"
-
-    log_action(
-        db,
-        user_id=doctor.user_id or user.id,
-        user_type=user.role.value if hasattr(user.role, "value") else str(user.role),
-        action="REPORT_SHARED",
-        resource_type="report",
-        resource_id=report.id,
-        details=details,
-    )
-
-    return ShareReportResponse(shared=True, shared_at=now)
+    log_action(db, user_id=user.id, user_type='doctor', action='REPORT_RELEASED' if payload.share_with_patient else 'REPORT_RELEASE_WITHDRAWN', resource_type='report', resource_id=report.id)
+    return ShareReportResponse(shared=report.shared_with_patient, shared_at=report.shared_at)
 
 
 @router.get("/reports")
@@ -613,7 +503,7 @@ def delete_draft_report(
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
     report = _get_owned_report(db, doctor, report_id)
-    if report.status in (ReportStatus.signed, ReportStatus.addendum):
+    if report.signed_at or report.status != ReportStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Signed reports cannot be deleted."

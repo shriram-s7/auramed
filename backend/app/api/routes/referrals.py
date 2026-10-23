@@ -17,68 +17,7 @@ from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/doctor/referrals", tags=["referrals"])
 
-SPECIALISTS_CATALOG = [
-    {
-        "id": "spec-1",
-        "name": "Dr. Kavitha Suresh",
-        "specialty": "Surgical Oncology",
-        "hospital": "AuraMed Regional Cancer Institute",
-        "department": "Breast & Endocrine Surgery",
-        "next_available": "Tomorrow, 10:30 AM",
-        "phone": "+91-98765-01001",
-        "email": "kavitha.suresh@auramed.org",
-        "rating": "4.9 (120+ reviews)",
-        "bio": "Fellow of Royal College of Surgeons, specialized in oncoplastic breast preservation and sentinel node biopsy.",
-    },
-    {
-        "id": "spec-2",
-        "name": "Dr. Rajesh Raman",
-        "specialty": "Gynecologic Oncology",
-        "hospital": "Apollo Speciality Cancer Center",
-        "department": "Gynecologic Oncology & Colposcopy",
-        "next_available": "In 3 days (Thursday)",
-        "phone": "+91-98765-01002",
-        "email": "rajesh.raman@apollocancer.org",
-        "rating": "4.8 (95 reviews)",
-        "bio": "Board-certified Gynecologic Oncologist with 16 years experience in CIN dysplasia management and LEEP conization.",
-    },
-    {
-        "id": "spec-3",
-        "name": "Dr. Ananya Sen",
-        "specialty": "Diagnostic Radiology",
-        "hospital": "AuraMed Advanced Imaging Center",
-        "department": "Women's Diagnostic Imaging",
-        "next_available": "Today, 4:00 PM",
-        "phone": "+91-98765-01003",
-        "email": "ananya.sen@auramed.org",
-        "rating": "5.0 (180 reviews)",
-        "bio": "Senior Consultant Radiologist specialized in contrast-enhanced mammography and ultrasound-guided biopsy procedures.",
-    },
-    {
-        "id": "spec-4",
-        "name": "Dr. Arvind Menon",
-        "specialty": "Endocrinology & Reproductive Medicine",
-        "hospital": "Metro Fertility & Endocrine Institute",
-        "department": "Reproductive Endocrinology",
-        "next_available": "In 2 days",
-        "phone": "+91-98765-01004",
-        "email": "arvind.menon@metroendocrine.com",
-        "rating": "4.9 (88 reviews)",
-        "bio": "Specialist in metabolic PCOS phenotypes, insulin-resistance reversal, and ovulation induction protocols.",
-    },
-    {
-        "id": "spec-5",
-        "name": "Dr. Preethi Nambiar",
-        "specialty": "General Surgery",
-        "hospital": "AuraMed General Hospital",
-        "department": "Surgical Care Unit",
-        "next_available": "Tomorrow, 2:00 PM",
-        "phone": "+91-98765-01005",
-        "email": "preethi.nambiar@auramed.org",
-        "rating": "4.7 (75 reviews)",
-        "bio": "Experienced consultant general surgeon specializing in soft tissue biopsies and benign lesion excision.",
-    },
-]
+SPECIALISTS_CATALOG = []  # No verified specialist directory is connected.
 
 
 class ReferralAttachments(BaseModel):
@@ -129,7 +68,7 @@ def _format_referral(r: Referral) -> dict[str, Any]:
         "referral_id": str(r.id),
         "patient_id": str(r.patient_id),
         "patient_name": p.full_name if p else "Patient",
-        "patient_code": p.patient_code if p else "—",
+        "patient_code": p.patient_code if p else "â€”",
         "from_doctor_id": str(r.from_doctor_id),
         "to_specialist": s_name or "Specialist",
         "specialist_name": s_name,
@@ -163,7 +102,7 @@ def get_patient_referral_context(
     except ValueError:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    patient = db.query(PatientProfile).filter(PatientProfile.id == pid).first()
+    patient = db.query(PatientProfile).filter(PatientProfile.id == pid, PatientProfile.created_by_doctor_id == doctor.id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
@@ -208,7 +147,7 @@ def create_referral(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid patient ID")
 
-    patient = db.query(PatientProfile).filter(PatientProfile.id == pid).first()
+    patient = db.query(PatientProfile).filter(PatientProfile.id == pid, PatientProfile.created_by_doctor_id == doctor.id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
@@ -229,6 +168,17 @@ def create_referral(
                 break
 
     att = dict(payload.attachments or {})
+    source_id = att.get("source_scan_id")
+    if source_id:
+        try:
+            source_uuid = uuid.UUID(source_id)
+        except (ValueError, TypeError):
+            raise HTTPException(422, "Invalid source scan")
+        source = db.query(Scan).filter(Scan.id == source_uuid, Scan.doctor_id == doctor.id,
+                                     Scan.patient_id == pid).first()
+        if not source:
+            raise HTTPException(404, "Source scan not found for this patient")
+
     if payload.specialist_id:
         att["specialist_id"] = payload.specialist_id
     if payload.specialist_name:
@@ -246,7 +196,7 @@ def create_referral(
         reason=payload.reason,
         priority=prio_enum,
         attachments=att,
-        status="sent",
+        status="referred",
         notes=notes_text,
     )
     db.add(referral)
@@ -304,7 +254,10 @@ def update_referral(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Referral not found")
 
     if payload.status:
-        referral.status = payload.status
+        from app.services.care_workflow import transition_referral
+        mapped = {"sent": "referred", "accepted": "contacted", "completed": "seen"}.get(payload.status, payload.status)
+        transition_referral(referral, mapped, payload.notes or payload.response_notes or payload.specialist_response_notes,
+                            doctor.id)
 
     resp_note = payload.response_notes or payload.specialist_response_notes
     if resp_note:

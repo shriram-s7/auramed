@@ -143,10 +143,10 @@ def get_doctor_settings(
     profile_data = {
         "full_name": doctor.full_name,
         "specialty": doctor.specialty or "Oncology Specialist",
-        "hospital": doctor.hospital or "AuraMed General Hospital, Chennai",
-        "phone": doctor.phone or "+91 98401 23456",
+        "hospital": doctor.hospital or "",
+        "phone": doctor.phone or "",
         "email": user.email,
-        "address": doctor.address or "Suite 402, Clinical Oncology & Diagnostic Wing, Chennai",
+        "address": doctor.address or "",
         "registration_number": doctor.registration_number,
     }
 
@@ -158,8 +158,8 @@ def get_doctor_settings(
     account_info = {
         "doctor_id": f"DOC-{str(doctor.id)[:8].upper()}",
         "account_created": user.created_at.strftime("%b %d, %Y") if user.created_at else "Jan 15, 2026",
-        "last_login": "Today, 08:30 AM IST",
-        "account_status": "Verified Clinician",
+        "last_login": "Not recorded here",
+        "account_status": "Approved" if doctor.is_approved else "Pending approval",
         "is_approved": doctor.is_approved,
         "verified_on": doctor.approved_at.strftime("%b %d, %Y") if doctor.approved_at else "Jan 16, 2026",
     }
@@ -352,7 +352,7 @@ def update_doctor_settings_unified(
     if "security" in payload and isinstance(payload["security"], dict):
         sec = payload["security"]
         if "two_factor_enabled" in sec:
-            doctor.two_factor_enabled = bool(sec["two_factor_enabled"])
+            raise HTTPException(422, 'Two-factor authentication is not available in this prototype.')
             db.commit()
 
     return get_doctor_settings(request, db, doctor)

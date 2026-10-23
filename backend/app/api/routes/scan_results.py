@@ -313,6 +313,14 @@ def schedule_followup(
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
     scan = _get_owned_scan(db, doctor, scan_id)
+    from app.services.care_messaging import clinic_today
+    if payload.scheduled_date < clinic_today():
+        raise HTTPException(422, 'Choose today or a future follow-up date')
+    conflict = db.query(Appointment).filter(Appointment.patient_id == scan.patient_id,
+        Appointment.scheduled_date == payload.scheduled_date,
+        Appointment.status != AppointmentStatus.cancelled).first()
+    if conflict:
+        raise HTTPException(409, 'An appointment already exists for this patient on that date')
     appointment = Appointment(
         patient_id=scan.patient_id,
         doctor_id=doctor.id,
@@ -326,6 +334,8 @@ def schedule_followup(
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+    from app.services.care_messaging import queue_appointment_messages
+    queue_appointment_messages(db, appointment, "scheduled")
 
     log_action(
         db,

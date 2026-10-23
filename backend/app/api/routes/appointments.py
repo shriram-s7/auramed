@@ -13,8 +13,11 @@ from app.models.appointment import Appointment
 from app.models.patient_profile import PatientProfile
 from app.models.doctor_profile import DoctorProfile
 from app.models.scan import Scan
+from app.models.referral import Referral
+from app.services.care_workflow import stage_of, transition_referral, sync_linked_referrals
 from app.models.enums import AppointmentStatus
 from app.services.audit import log_action
+from app.services.care_messaging import queue_appointment_messages, invalidate_appointment_messages, clinic_today
 
 router = APIRouter(prefix="/api/doctor/appointments", tags=["appointments"])
 
@@ -22,6 +25,7 @@ router = APIRouter(prefix="/api/doctor/appointments", tags=["appointments"])
 from sqlalchemy import or_
 
 class ScheduleAppointmentRequest(BaseModel):
+    referral_id: Optional[str] = None
     patient_id: str
     appointment_type: Optional[str] = None
     type: Optional[str] = None
@@ -62,7 +66,7 @@ def _parse_time(time_val: Any) -> Optional[time]:
         parts = str(time_val).strip().split(":")
         return time(int(parts[0]), int(parts[1]))
     except Exception:
-        return time(10, 0)
+        raise HTTPException(422, 'Provide a valid appointment time in HH:MM format')
 
 
 def _format_appointment(a: Appointment, doctor: DoctorProfile) -> dict[str, Any]:
@@ -81,7 +85,7 @@ def _format_appointment(a: Appointment, doctor: DoctorProfile) -> dict[str, Any]
         "doctor_id": str(a.doctor_id),
         "scan_id": str(a.scan_id) if a.scan_id else None,
         "patient_name": patient.full_name if patient else "Patient",
-        "patient_code": patient.patient_code if patient else "—",
+        "patient_code": patient.patient_code if patient else "â€”",
         "risk_level": r_level,
         "module": mod,
         "appointment_type": appt_type,
@@ -131,8 +135,8 @@ def schedule_appointment(
     # 2. Date & Time parsing
     target_date = payload.date or payload.scheduled_date
     if not target_date:
-        target_date = date.today()
-    if target_date < date.today():
+        target_date = clinic_today()
+    if target_date < clinic_today():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Scheduled date must be today or in the future"
@@ -140,6 +144,8 @@ def schedule_appointment(
 
     target_time = _parse_time(payload.time or payload.scheduled_time) or time(10, 0)
     target_type = payload.type or payload.appointment_type or "consultation"
+    if target_type == 'Screening recall' and (not payload.notes or len(payload.notes.strip()) < 3):
+        raise HTTPException(422, 'Record the clinician rationale for this recall date')
 
     # 3. Validate No conflicting appointment for same patient same date
     conflict = db.query(Appointment).filter(
@@ -153,13 +159,29 @@ def schedule_appointment(
             detail=f"An appointment is already scheduled for this patient on {target_date}"
         )
 
+    linked_referral = None
+    if payload.referral_id:
+        try:
+            rid = uuid.UUID(payload.referral_id)
+        except ValueError:
+            raise HTTPException(422, "Invalid referral ID")
+        linked_referral = db.query(Referral).filter(Referral.id == rid,
+            Referral.from_doctor_id == doctor.id, Referral.patient_id == pid).first()
+        if not linked_referral:
+            raise HTTPException(404, "Referral not found for this patient")
+        if stage_of(linked_referral) != "contacted":
+            raise HTTPException(422, "Record patient contact before booking the referral visit")
+
     # Parse scan_id if present
     parsed_scan_id = None
     if payload.scan_id:
         try:
             parsed_scan_id = uuid.UUID(payload.scan_id)
         except ValueError:
-            parsed_scan_id = None
+            raise HTTPException(422, "Invalid scan ID")
+        if not db.query(Scan).filter(Scan.id == parsed_scan_id, Scan.patient_id == pid,
+                                     Scan.doctor_id == doctor.id).first():
+            raise HTTPException(404, "Scan not found for this patient")
 
     appt = Appointment(
         patient_id=pid,
@@ -174,7 +196,12 @@ def schedule_appointment(
         ai_recommended=payload.ai_recommended,
     )
     db.add(appt)
-    db.commit()
+    db.flush()
+    if linked_referral:
+        transition_referral(linked_referral, "scheduled",
+            f"Care team booked visit for {target_date} at {target_time:%H:%M}.", doctor.id, target_date)
+        linked_referral.attachments = {**linked_referral.attachments, "care_appointment_id": str(appt.id)}
+    queue_appointment_messages(db, appt, "scheduled")
     db.refresh(appt)
 
     # Audit log
@@ -197,13 +224,6 @@ def schedule_appointment(
         },
     )
 
-    # Trigger notifications (in-app, email, sms)
-    try:
-        from app.services.notifications import notify_patient_appointment_reminder
-        notify_patient_appointment_reminder(pid, appt.id, db=db)
-    except Exception:
-        pass
-
     return _format_appointment(appt, doctor)
 
 
@@ -214,8 +234,8 @@ def get_appointment_calendar(
     db: Session = Depends(get_db),
     doctor: DoctorProfile = Depends(get_current_doctor_profile),
 ):
-    target_year = year or date.today().year
-    target_month = month or date.today().month
+    target_year = year or clinic_today().year
+    target_month = month or clinic_today().month
 
     appts = (
         db.query(Appointment)
@@ -252,7 +272,7 @@ def list_appointments(
     query = db.query(Appointment).filter(Appointment.doctor_id == doctor.id)
     all_appts = query.order_by(Appointment.scheduled_date.asc(), Appointment.scheduled_time.asc()).all()
 
-    today = date.today()
+    today = clinic_today()
     next_7_days = today + timedelta(days=7)
 
     # Compute high-level summary metrics
@@ -369,6 +389,20 @@ def patch_appointment(
         )
 
     old_date = appt.scheduled_date
+    old_time = appt.scheduled_time
+    if appt.status in (AppointmentStatus.completed, AppointmentStatus.cancelled):
+        raise HTTPException(422, 'This appointment is closed; create a new visit instead')
+    if payload.status and payload.status.lower() not in {s.value for s in AppointmentStatus}:
+        raise HTTPException(422, "Invalid appointment status")
+    proposed_date = payload.date or payload.scheduled_date
+    if proposed_date and proposed_date < clinic_today():
+        raise HTTPException(422, "Choose today or a future date")
+    if proposed_date and proposed_date != old_date:
+        conflict = db.query(Appointment).filter(Appointment.patient_id == appt.patient_id,
+            Appointment.id != appt.id, Appointment.scheduled_date == proposed_date,
+            Appointment.status != AppointmentStatus.cancelled).first()
+        if conflict:
+            raise HTTPException(409, "An appointment already exists on that date")
     is_rescheduling = False
     is_cancelling = False
 
@@ -402,14 +436,31 @@ def patch_appointment(
     target_type = payload.type or payload.appointment_type
     if target_type:
         appt.appointment_type = target_type
+    is_rescheduling = is_rescheduling or old_time != appt.scheduled_time or bool(payload.location and payload.location != appt.location)
 
     if payload.location:
         appt.location = payload.location
 
+    if is_rescheduling and not is_cancelling:
+        appt.status = AppointmentStatus.rescheduled
+        appt.updated_at = datetime.now(_dt.timezone.utc)
+
     if payload.notes and not is_cancelling:
         appt.notes = payload.notes
 
-    db.commit()
+    sync_linked_referrals(db, appt, doctor.id)
+    db.flush()
+
+    if is_cancelling or is_rescheduling:
+        invalidate_appointment_messages(db, appt.id)
+        appt.reminder_sent = False
+        queue_appointment_messages(db, appt, "cancelled" if is_cancelling else "rescheduled")
+    elif appt.status in (AppointmentStatus.completed, AppointmentStatus.no_show):
+        invalidate_appointment_messages(db, appt.id)
+        db.commit()
+
+    else:
+        db.commit()
     db.refresh(appt)
 
     if is_cancelling:
@@ -486,10 +537,14 @@ def complete_appointment(
             detail="Access denied. You do not have permission to modify this appointment."
         )
 
+    if appt.status in (AppointmentStatus.completed, AppointmentStatus.cancelled):
+        raise HTTPException(422, 'This appointment is already closed')
     appt.status = AppointmentStatus.completed
+    invalidate_appointment_messages(db, appt.id)
     if payload and payload.completion_notes:
         appt.notes = f"{appt.notes or ''}\n[Completion Notes]: {payload.completion_notes}".strip()
 
+    sync_linked_referrals(db, appt, doctor.id)
     db.commit()
     db.refresh(appt)
 
@@ -539,8 +594,13 @@ def cancel_appointment_endpoint(
             detail="Access denied. You do not have permission to cancel this appointment."
         )
 
+    if appt.status in (AppointmentStatus.completed, AppointmentStatus.cancelled):
+        raise HTTPException(422, 'This appointment is already closed')
     appt.status = AppointmentStatus.cancelled
-    db.commit()
+    sync_linked_referrals(db, appt, doctor.id)
+    invalidate_appointment_messages(db, appt.id)
+    db.flush()
+    queue_appointment_messages(db, appt, "cancelled")
     db.refresh(appt)
 
     log_action(

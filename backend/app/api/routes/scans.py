@@ -57,7 +57,7 @@ if not logger.handlers:
 router = APIRouter(prefix="/api/doctor/scans", tags=["scans"])
 
 VALID_MODULES = {"breast", "cervical", "pcos"}
-ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".dcm"}
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
 
 
@@ -690,10 +690,43 @@ async def analyze_scan(
             detail="clinical_inputs must be a valid JSON string object.",
         )
 
+    if additional_images:
+        raise HTTPException(422, 'Only one selected image is analyzed. Additional images are not supported.')
+    # Validate file format and bytes before saving any record.
+    content = None
+    if image:
+        from PIL import Image
+        import io
+        content = await image.read()
+        if not content or len(content) > MAX_FILE_SIZE_BYTES:
+            raise HTTPException(422, 'Choose an image smaller than 50 MB.')
+        if os.path.splitext(image.filename or '')[1].lower() not in ALLOWED_IMAGE_EXTENSIONS:
+            raise HTTPException(422, 'Only JPEG and PNG images are supported. DICOM is unavailable.')
+        try:
+            with Image.open(io.BytesIO(content)) as candidate:
+                if candidate.format not in ('JPEG', 'PNG'): raise ValueError()
+                candidate.verify()
+        except Exception:
+            raise HTTPException(422, 'The file could not be decoded as a JPEG or PNG image.')
     scan = None
     if scan_id:
         scan = _get_owned_scan(db, doctor, scan_id)
         active_module = scan.module.value
+        from app.models.report import Report
+        if db.query(Report).filter(Report.scan_id == scan.id, Report.signed_at != None).first():
+            raise HTTPException(409, 'This visit has a finalized report. Start a new visit for new analysis.')
+        if patient_id and str(scan.patient_id) != patient_id:
+            raise HTTPException(422, 'Patient and visit do not match')
+        if module and active_module != module:
+            raise HTTPException(422, 'Assessment area and visit do not match')
+        if content:
+            ext = os.path.splitext(image.filename)[1].lower()
+            saved = f'{uuid.uuid4().hex}{ext}'
+            module_dir = os.path.join(settings.upload_dir, active_module)
+            os.makedirs(module_dir, exist_ok=True)
+            scan.image_path = os.path.join(module_dir, saved).replace('\\', '/')
+            with open(scan.image_path, 'wb') as f: f.write(content)
+            scan.file_name = image.filename; scan.file_size = len(content)
     elif image and module and patient_id:
         # Fallback: Support direct upload + analyze workflow
         patient = _get_owned_patient(db, doctor, patient_id)
@@ -701,10 +734,9 @@ async def analyze_scan(
         if active_module not in VALID_MODULES:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid module.")
         
-        content = await image.read()
         ext = os.path.splitext(image.filename or "")[1].lower() or ".png"
         timestamp = int(datetime.utcnow().timestamp())
-        saved_filename = f"{active_module}_{patient.patient_code}_{timestamp}{ext}"
+        saved_filename = f"{active_module}_{uuid.uuid4().hex}{ext}"
         module_dir = os.path.join(settings.upload_dir, active_module)
         os.makedirs(module_dir, exist_ok=True)
         with open(os.path.join(module_dir, saved_filename), "wb") as f:
@@ -731,6 +763,9 @@ async def analyze_scan(
             detail="scan_id is required for analysis.",
         )
 
+    consent = scan.patient.consent or {}
+    if not (consent.get('research_ai') or consent.get('data_storage_and_ai_analysis') or consent.get('synthetic_demo')):
+        raise HTTPException(422, 'Research image analysis consent is not recorded. Continue with clinician review or record consent first.')
     # Validates ALL clinical inputs strictly
     validate_clinical_inputs(active_module, inputs)
 
@@ -748,6 +783,12 @@ async def analyze_scan(
     scan.clinical_inputs = inputs
     scan.image_quality = image_quality or scan.image_quality
     scan.status = ScanStatus.analyzing
+    scan.image_model_score = None
+    scan.reasoning = {'analysis_state': 'processing'}
+    mods = dict(scan.doctor_modifications or {})
+    if mods.get('clinical_review'):
+        mods['clinical_review'] = {**mods['clinical_review'], 'complete': False}
+        scan.doctor_modifications = mods
     db.commit()
 
     # 1. Check ModelLoader singleton and execute real deep learning inference
@@ -781,6 +822,16 @@ async def analyze_scan(
                 break
 
     if resolved_img_path:
+        from PIL import Image
+        from app.services.image_quality import technical_quality
+        with Image.open(resolved_img_path) as uploaded_image:
+            quality_check = technical_quality(uploaded_image)
+        if quality_check['status'] != 'passed':
+            scan.image_quality = 'poor'
+            scan.status = ScanStatus.draft
+            scan.reasoning = {'analysis_state': 'failed', 'failure_reason': quality_check['reason']}
+            db.commit()
+            raise HTTPException(status_code=422, detail='Repeat recommended: ' + quality_check['reason'])
         if active_module == "breast" and loader.breast_model is not None:
             try:
                 inf = run_breast_inference(loader.breast_model, resolved_img_path)
@@ -848,12 +899,12 @@ async def analyze_scan(
     else:  # pcos
         formula_res = compute_pcos_risk(inputs, image_criterion_met=image_criterion_met)
 
-    # 3. If model not loaded or inference failed, degrade gracefully to formula proxy
+    # Never present a formula copied into the image channel as multimodal evidence.
     if not model_inference_success or image_model_score is None:
-        image_model_score = formula_res.formula_score
-        fallback_msg = "Image model temporarily unavailable. Analysis based on clinical formula only."
-        if fallback_msg not in formula_res.limitations:
-            formula_res.limitations.append(fallback_msg)
+        scan.status = ScanStatus.draft
+        scan.reasoning = {'analysis_state': 'failed', 'failure_reason': 'Model inference unavailable'}
+        db.commit()
+        raise HTTPException(status_code=503, detail="Image analysis is unavailable. The scan is retained; restore the trained model and retry. No combined AI result was generated.")
 
     formula_res_dict = formula_res.model_dump()
 
@@ -918,33 +969,9 @@ async def analyze_scan(
 
     recommended_actions = _get_recommended_actions(active_module, risk_level_str)
 
-    # 7. Generate reasoning details
-    if model_findings:
-        findings = model_findings
-        interpretation = model_interpretation
-    else:
-        if active_module == "breast":
-            lump_str = inputs.get("lump_size_cm", "2.4")
-            findings = [
-                {"finding": "Irregular mass detected", "confidence": 0.92},
-                {"finding": "Spiculated margins", "confidence": 0.87},
-                {"finding": "High density region", "confidence": 0.81},
-            ]
-            interpretation = f"Plain English description: Irregular mass ({lump_str} cm) with spiculated margins detected in the upper outer quadrant."
-        elif active_module == "cervical":
-            findings = [
-                {"finding": "Atypical squamous cells identified", "confidence": 0.89},
-                {"finding": "Hyperchromatic nuclei present", "confidence": 0.84},
-                {"finding": "Irregular nuclear membrane", "confidence": 0.79},
-            ]
-            interpretation = f"Plain English description: Cytological findings suggestive of {formula_res.risk_tier} cervical intraepithelial lesion."
-        else:
-            findings = [
-                {"finding": "Polycystic ovarian morphology (PCOM)", "confidence": 0.91},
-                {"finding": "Peripheral arrangement of follicles ('string of pearls')", "confidence": 0.88},
-                {"finding": "Increased ovarian stromal echogenicity", "confidence": 0.83},
-            ]
-            interpretation = f"Plain English description: Ultrasound imaging demonstrates polycystic ovarian morphology with elevated AMH ({inputs.get('amh_ng_ml', 6.8)} ng/ml)."
+    # Classification is not a measured anatomical finding.
+    findings = []
+    interpretation = 'Investigational image classification; clinician interpretation required.'
 
     contributions = [
         {
@@ -962,40 +989,13 @@ async def analyze_scan(
         "overall": confidence_res.plain_explanation,
     }
 
-    # 7b. Generate the structured, dynamically-populated clinical reasoning narrative
-    if active_module == "breast":
-        top_finding = findings[0]["finding"] if findings else "no dominant suspicious finding"
-        clinical_reasoning = generate_breast_reasoning(
-            inputs=inputs,
-            image_model_score=image_model_score,
-            model_interpretation=top_finding,
-            has_gradcam=bool(gradcam_heatmap_b64),
-            formula_res=formula_res,
-            fusion_res_dict=fusion_res_dict,
-            confidence_score=confidence_res.confidence_score,
-            threshold=loader.breast_threshold,
-            recommended_actions=recommended_actions,
-        )
-    elif active_module == "cervical":
-        clinical_reasoning = generate_cervical_reasoning(
-            inputs=inputs,
-            predicted_class=predicted_cytology_class,
-            confidence=cervical_confidence,
-            bethesda_term=cervical_bethesda_term or formula_res.interpretation.split(".")[0],
-            formula_res=formula_res,
-            threshold=loader.cervical_threshold,
-        )
-    else:  # pcos
-        clinical_reasoning = generate_pcos_reasoning(
-            inputs=inputs,
-            image_model_score=image_model_score,
-            predicted_class=pcos_predicted_class,
-            image_criterion_met=image_criterion_met,
-            formula_res=formula_res,
-            image_threshold=loader.pcos_threshold,
-        )
+    clinical_reasoning = 'Research outputs are not a diagnosis. Clinical assessment and next steps must be recorded by the clinician.'
+    recommended_actions = []
+    recommended_followup_days = None
 
     reasoning_dict = {
+        "analysis_state": "completed",
+        "model_class": predicted_cytology_class or pcos_predicted_class,
         "image_findings": findings,
         "image_interpretation": interpretation,
         "clinical_contributions": contributions,
@@ -1200,41 +1200,28 @@ def delete_scan(
     return {"status": "archived", "message": "Scan has been archived"}
 
 
-@router.post("/draft", response_model=ScanDraftResponse, status_code=status.HTTP_201_CREATED)
-def save_draft(
-    payload: ScanDraftRequest,
-    db: Session = Depends(get_db),
-    doctor: DoctorProfile = Depends(get_current_doctor_profile),
-):
-    mod_str = payload.module.lower()
-    if mod_str not in VALID_MODULES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid module")
-
+@router.post('/draft', response_model=ScanDraftResponse, status_code=201)
+def save_draft(payload: ScanDraftRequest, db: Session = Depends(get_db), doctor: DoctorProfile = Depends(get_current_doctor_profile)):
+    from app.models.report import Report
+    if payload.module not in VALID_MODULES: raise HTTPException(422, 'Invalid assessment area')
     patient = _get_owned_patient(db, doctor, str(payload.patient_id))
-
-    scan = Scan(
-        patient_id=patient.id,
-        doctor_id=doctor.id,
-        module=ScreeningModule(mod_str),
-        scan_date=payload.scan_date or date.today(),
-        status=ScanStatus.draft,
-        clinical_inputs=payload.clinical_inputs,
-    )
-    db.add(scan)
-    db.commit()
-    db.refresh(scan)
-
-    log_action(
-        db,
-        user_id=doctor.user_id,
-        user_type="doctor",
-        action="scan_draft_saved",
-        resource_type="scan",
-        resource_id=scan.id,
-        details={"module": payload.module},
-    )
-
-    return ScanDraftResponse(scan_id=scan.id, module=payload.module, status=scan.status.value, message="Draft saved")
+    if payload.scan_id:
+        scan = _get_owned_scan(db, doctor, str(payload.scan_id))
+        if scan.patient_id != patient.id or scan.module.value != payload.module:
+            raise HTTPException(422, 'Patient, visit and assessment area must match')
+        if db.query(Report).filter(Report.scan_id == scan.id, Report.signed_at != None).first():
+            raise HTTPException(409, 'Finalized visits cannot be edited')
+    else:
+        scan = Scan(patient_id=patient.id, doctor_id=doctor.id, module=ScreeningModule(payload.module), scan_date=payload.scan_date or date.today(), status=ScanStatus.draft)
+        db.add(scan)
+    if scan.clinical_inputs != payload.clinical_inputs:
+        scan.reasoning = {**(scan.reasoning or {}), 'analysis_state': 'stale' if scan.image_model_score is not None else 'not_requested'}
+        mods = dict(scan.doctor_modifications or {})
+        if mods.get('clinical_review'): mods['clinical_review'] = {**mods['clinical_review'], 'complete': False}
+        scan.doctor_modifications = mods
+    scan.clinical_inputs = payload.clinical_inputs
+    db.commit(); db.refresh(scan)
+    return ScanDraftResponse(scan_id=scan.id, module=payload.module, status=scan.status.value, message='Draft saved')
 
 
 @router.get("/{scan_id}/primary-image")

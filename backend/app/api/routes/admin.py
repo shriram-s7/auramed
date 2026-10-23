@@ -117,150 +117,32 @@ def get_admin_dashboard(
 
 
 # --- 1. ADMIN STATS & CHARTS ---
-@router.get("/stats")
-def get_admin_stats(
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin)
-):
-    total_patients = db.query(PatientProfile).count()
-    # Baseline for display if fresh DB
-    if total_patients < 10:
-        total_patients_val = 1420 + total_patients
-    else:
-        total_patients_val = total_patients
-
-    total_doctors = db.query(DoctorProfile).count()
-    if total_doctors < 5:
-        total_doctors_val = 48 + total_doctors
-    else:
-        total_doctors_val = total_doctors
-
-    total_reports = db.query(Report).count()
-    if total_reports < 10:
-        total_reports_val = 3890 + total_reports
-    else:
-        total_reports_val = total_reports
-
-    pending_del_reqs = db.query(DataDeletionRequest).filter(DataDeletionRequest.status == "pending").count()
-    pending_docs = db.query(DoctorProfile).filter(DoctorProfile.is_approved == False).count()
-    total_pending = (pending_del_reqs or 0) + (pending_docs or 0)
-    if total_pending == 0:
-        total_pending = 4
-
-    # Chart data
-    screenings_6m = [
-        {"month": "Apr", "breast": 120, "cervical": 85, "pcos": 94},
-        {"month": "May", "breast": 145, "cervical": 98, "pcos": 110},
-        {"month": "Jun", "breast": 160, "cervical": 115, "pcos": 125},
-        {"month": "Jul", "breast": 190, "cervical": 130, "pcos": 140},
-        {"month": "Aug", "breast": 210, "cervical": 142, "pcos": 158},
-        {"month": "Sep", "breast": 240, "cervical": 165, "pcos": 175},
-    ]
-    screenings_3m = screenings_6m[-3:]
-    screenings_1y = [
-        {"month": "Oct", "breast": 95, "cervical": 60, "pcos": 70},
-        {"month": "Nov", "breast": 105, "cervical": 72, "pcos": 80},
-        {"month": "Dec", "breast": 115, "cervical": 78, "pcos": 88},
-        {"month": "Jan", "breast": 110, "cervical": 75, "pcos": 82},
-        {"month": "Feb", "breast": 118, "cervical": 80, "pcos": 89},
-        {"month": "Mar", "breast": 125, "cervical": 88, "pcos": 92},
-        {"month": "Apr", "breast": 135, "cervical": 90, "pcos": 98},
-        {"month": "May", "breast": 145, "cervical": 98, "pcos": 110},
-        {"month": "Jun", "breast": 160, "cervical": 115, "pcos": 125},
-        {"month": "Jul", "breast": 190, "cervical": 130, "pcos": 140},
-        {"month": "Aug", "breast": 210, "cervical": 142, "pcos": 158},
-        {"month": "Sep", "breast": 240, "cervical": 165, "pcos": 175},
-    ]
-
-    return {
-        "total_patients": total_patients_val,
-        "patients_change_pct": 12.5,
-        "registered_doctors": total_doctors_val,
-        "doctors_change_pct": 8.3,
-        "reports_generated": total_reports_val,
-        "reports_change_pct": 15.2,
-        "pending_requests": total_pending,
-        "requests_change_pct": -20.0,
-        "stats": {
-            "total_patients": {"value": total_patients_val, "change": 12.5, "trend": "up"},
-            "registered_doctors": {"value": total_doctors_val, "change": 8.3, "trend": "up"},
-            "reports_generated": {"value": total_reports_val, "change": 15.2, "trend": "up"},
-            "pending_requests": {"value": total_pending, "change": -20.0, "trend": "down"},
-        },
-        "screenings_over_time": {
-            "last_6_months": screenings_6m,
-            "last_3_months": screenings_3m,
-            "last_year": screenings_1y,
-        },
-    }
+@router.get('/stats')
+def get_admin_stats(db: Session = Depends(get_db), admin_user: User = Depends(require_admin)):
+    data = get_admin_dashboard(db, admin_user)
+    return {'total_patients': data['stats']['total_patients'], 'registered_doctors': data['stats']['total_doctors'],
+            'reports_generated': data['stats']['total_reports'], 'screenings_over_time': {}, 'stats': data['stats']}
 
 # --- 2. SYSTEM STATUS (Auto refreshed every 30s) ---
-@router.get("/system-status")
-def get_system_status(
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin)
-):
-    import os
-    from app.core.config import settings
+@router.get('/system-status')
+def get_system_status(db: Session = Depends(get_db), admin_user: User = Depends(require_admin)):
     from sqlalchemy import text
-
-    # Check database query
-    db_status = "healthy"
-    try:
-        db.execute(text("SELECT 1"))
-    except Exception:
-        db_status = "down"
-
-    # Check file storage
-    storage_status = "healthy"
-    try:
-        if not os.path.exists(settings.upload_dir):
-            os.makedirs(settings.upload_dir, exist_ok=True)
-        test_file = os.path.join(settings.upload_dir, ".healthcheck")
-        with open(test_file, "w") as f:
-            f.write("ok")
-        if os.path.exists(test_file):
-            os.remove(test_file)
-    except Exception:
-        storage_status = "degraded"
-
-    app_status = "healthy"
-    ai_status = "healthy"
-    email_status = "healthy"
-    backup_status = "healthy"
-
-    overall = "operational"
-    if db_status == "down" or app_status == "down":
-        overall = "down"
-    elif db_status == "degraded" or storage_status == "degraded":
-        overall = "degraded"
-
-    now_iso = datetime.utcnow().isoformat() + "Z"
-    services = [
-        {"name": "Application Server", "status": app_status.capitalize(), "latency": "18ms", "uptime": "99.98%"},
-        {"name": "AI Inference Engine", "status": ai_status.capitalize(), "latency": "240ms", "uptime": "99.92%"},
-        {"name": "Database", "status": db_status.capitalize(), "latency": "4ms", "uptime": "99.99%"},
-        {"name": "File Storage", "status": storage_status.capitalize(), "latency": "35ms", "uptime": "100%"},
-        {"name": "Email Service", "status": email_status.capitalize(), "latency": "62ms", "uptime": "99.95%"},
-        {"name": "Backup Service", "status": backup_status.capitalize(), "latency": "Daily OK", "uptime": "99.90%"},
-    ]
+    from app.services.care_messaging import channel_readiness
     from app.ml.models.model_loader import ModelLoader
-    model_loader = ModelLoader.get_instance()
-    models_info = model_loader.get_models_info()
-
-    return {
-        "application_server": app_status,
-        "ai_inference_engine": ai_status,
-        "database": db_status,
-        "file_storage": storage_status,
-        "email_service": email_status,
-        "backup_service": backup_status,
-        "overall": overall,
-        "badge": "All Systems Operational" if overall == "operational" else f"System {overall.capitalize()}",
-        "timestamp": now_iso,
-        "services": services,
-        "model_info": models_info,
-    }
+    from app.core.config import settings
+    from pathlib import Path
+    try: db.execute(text('SELECT 1')); database = 'Reachable'
+    except Exception: database = 'Unavailable'
+    channels = channel_readiness()
+    loader = ModelLoader.get_instance()
+    models = [getattr(loader, n + '_model', None) is not None for n in ('breast', 'cervical', 'pcos')]
+    services = [{'name': 'Database', 'status': database},
+        {'name': 'Upload directory', 'status': 'Exists' if Path(settings.upload_dir).is_dir() else 'Not found'},
+        {'name': 'Research models', 'status': f'{sum(models)} of 3 loaded (availability only)'},
+        {'name': 'Messaging mode', 'status': channels['mode']},
+        *[{'name': c.upper() if c == 'sms' else c.title(), 'status': 'Configured; delivery not verified here' if channels[c] else 'Not configured'} for c in ('sms','email','whatsapp')],
+        {'name': 'Backup / restore verification', 'status': 'Not measured by this dashboard'}]
+    return {'services': services, 'channels': channels, 'timestamp': datetime.utcnow().isoformat()}
 
 
 # --- 3. PENDING ACTIONS COUNTS ---
@@ -324,138 +206,7 @@ def get_audit_logs(
     db_logs = query.all()
     
     # Enrich with default demo logs if DB has few
-    demo_logs = [
-        {
-            "id": "log-001",
-            "timestamp": "2026-09-11 19:42:10",
-            "user_name": "Dr. Kavitha Mehta",
-            "user_email": "dr.mehta@auramed.com",
-            "user_type": "Doctor",
-            "action": "Generated Report",
-            "resource_type": "Report",
-            "resource_id": "REP-2026-0042",
-            "details": "Digitally signed diagnostic report for Anita Sharma (P-2026-0001)",
-            "ip_address": "192.168.1.104",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-002",
-            "timestamp": "2026-09-11 18:30:15",
-            "user_name": "Admin User",
-            "user_email": "admin@auramed.com",
-            "user_type": "Admin",
-            "action": "Verified",
-            "resource_type": "Doctor Account",
-            "resource_id": "DOC-TNMC-8821",
-            "details": "Verified credentials for Dr. Ananya Sen (Diagnostic Radiology)",
-            "ip_address": "192.168.1.1",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-003",
-            "timestamp": "2026-09-11 17:15:00",
-            "user_name": "Unknown Client",
-            "user_email": "system@gateway",
-            "user_type": "System",
-            "action": "Alert",
-            "resource_type": "System",
-            "resource_id": "AUTH-GUARD",
-            "details": "Repeated invalid token authentication attempt from 203.0.113.42",
-            "ip_address": "203.0.113.42",
-            "is_security_event": True,
-        },
-        {
-            "id": "log-004",
-            "timestamp": "2026-09-11 16:05:44",
-            "user_name": "Anita Sharma",
-            "user_email": "anita@auramed.com",
-            "user_type": "Patient",
-            "action": "Login",
-            "resource_type": "Patient Record",
-            "resource_id": "P-2026-0001",
-            "details": "Patient logged in via Mobile Patient Portal",
-            "ip_address": "49.207.180.12",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-005",
-            "timestamp": "2026-09-11 15:22:18",
-            "user_name": "Dr. Kavitha Mehta",
-            "user_email": "dr.mehta@auramed.com",
-            "user_type": "Doctor",
-            "action": "Share",
-            "resource_type": "Report",
-            "resource_id": "REP-2026-0042",
-            "details": "Shared signed clinical report via Patient Portal & SMS",
-            "ip_address": "192.168.1.104",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-006",
-            "timestamp": "2026-09-11 14:10:05",
-            "user_name": "Admin User",
-            "user_email": "admin@auramed.com",
-            "user_type": "Admin",
-            "action": "Data Export",
-            "resource_type": "System",
-            "resource_id": "EXP-CSV-2026",
-            "details": "Generated quarterly clinical screening anonymized aggregate report",
-            "ip_address": "192.168.1.1",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-007",
-            "timestamp": "2026-09-11 13:45:30",
-            "user_name": "Sunita Verma",
-            "user_email": "sunita@example.com",
-            "user_type": "Patient",
-            "action": "Deletion Request",
-            "resource_type": "Patient Record",
-            "resource_id": "REQ-2026-001",
-            "details": "Submitted GDPR/DPDP personal data erasure request",
-            "ip_address": "103.21.124.5",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-008",
-            "timestamp": "2026-09-11 12:00:19",
-            "user_name": "Dr. Rajesh Raman",
-            "user_email": "dr.raman@auramed.com",
-            "user_type": "Doctor",
-            "action": "Update",
-            "resource_type": "Scan",
-            "resource_id": "SCN-2026-0089",
-            "details": "Updated colposcopy observation notes with CIN-2 classification",
-            "ip_address": "192.168.1.112",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-009",
-            "timestamp": "2026-09-11 11:15:33",
-            "user_name": "System Worker",
-            "user_email": "ai-worker@auramed.internal",
-            "user_type": "System",
-            "action": "Generate",
-            "resource_type": "Scan",
-            "resource_id": "AI-INF-9912",
-            "details": "Inference finished for multimodal cervical scan with 94.2% confidence",
-            "ip_address": "127.0.0.1",
-            "is_security_event": False,
-        },
-        {
-            "id": "log-010",
-            "timestamp": "2026-09-11 10:02:11",
-            "user_name": "Dr. Mehta",
-            "user_email": "dr.mehta@auramed.com",
-            "user_type": "Doctor",
-            "action": "Login",
-            "resource_type": "Doctor Account",
-            "resource_id": "AUTH-DOC",
-            "details": "Doctor authenticated successfully via biometric SSO",
-            "ip_address": "192.168.1.104",
-            "is_security_event": False,
-        },
-    ]
+    demo_logs = []
 
     all_logs = []
     # Add DB logs formatted
@@ -531,96 +282,7 @@ def get_audit_logs(
     }
 
 # --- 5. DOCTOR MANAGEMENT ---
-DEMO_DOCTORS = [
-    {
-        "id": "doc-001",
-        "name": "Dr. Kavitha Mehta",
-        "email": "dr.mehta@auramed.com",
-        "doctor_id": "TNMC123456",
-        "specialty": "Gynecologic Oncology",
-        "hospital": "AuraMed General Hospital",
-        "status": "Verified",
-        "registered_date": "2026-01-15",
-        "phone": "+91-90000-00001",
-    },
-    {
-        "id": "doc-002",
-        "name": "Dr. Rajesh Raman",
-        "email": "rajesh.raman@apollocancer.org",
-        "doctor_id": "KMC-45892",
-        "specialty": "Gynecologic Oncology",
-        "hospital": "Apollo Speciality Cancer Center",
-        "status": "Verified",
-        "registered_date": "2026-02-10",
-        "phone": "+91-98765-01002",
-    },
-    {
-        "id": "doc-003",
-        "name": "Dr. Ananya Sen",
-        "email": "ananya.sen@auramed.org",
-        "doctor_id": "MMC-99124",
-        "specialty": "Diagnostic Radiology",
-        "hospital": "AuraMed Advanced Imaging Center",
-        "status": "Verified",
-        "registered_date": "2026-03-01",
-        "phone": "+91-98765-01003",
-    },
-    {
-        "id": "doc-004",
-        "name": "Dr. Arvind Menon",
-        "email": "arvind.menon@metroendocrine.com",
-        "doctor_id": "DMC-77215",
-        "specialty": "Endocrinology",
-        "hospital": "Metro Fertility & Endocrine Institute",
-        "status": "Pending",
-        "registered_date": "2026-09-02",
-        "phone": "+91-98765-01004",
-    },
-    {
-        "id": "doc-005",
-        "name": "Dr. Preethi Nambiar",
-        "email": "preethi.nambiar@auramed.org",
-        "doctor_id": "TNMC-66129",
-        "specialty": "General Surgery",
-        "hospital": "AuraMed General Hospital",
-        "status": "Verified",
-        "registered_date": "2026-04-18",
-        "phone": "+91-98765-01005",
-    },
-    {
-        "id": "doc-006",
-        "name": "Dr. Vikram Joshi",
-        "email": "v.joshi@mumbaicancer.org",
-        "doctor_id": "MMC-33419",
-        "specialty": "Surgical Oncology",
-        "hospital": "Tata Memorial Partner Clinic",
-        "status": "Pending",
-        "registered_date": "2026-09-07",
-        "phone": "+91-98210-44556",
-    },
-    {
-        "id": "doc-007",
-        "name": "Dr. Sangeetha Nair",
-        "email": "sangeetha.nair@keralascan.org",
-        "doctor_id": "KMC-88120",
-        "specialty": "Diagnostic Radiology",
-        "hospital": "AuraMed Advanced Imaging Center",
-        "status": "Pending",
-        "registered_date": "2026-09-09",
-        "phone": "+91-94470-11223",
-    },
-    {
-        "id": "doc-008",
-        "name": "Dr. Suresh Chandran",
-        "email": "schandran@expiredclinic.in",
-        "doctor_id": "TNMC-11002",
-        "specialty": "General Surgery",
-        "hospital": "City Care Dispensary",
-        "status": "Suspended",
-        "registered_date": "2025-11-20",
-        "phone": "+91-91760-99887",
-    },
-]
+DEMO_DOCTORS = []
 
 @router.get("/doctors")
 def get_doctors_list(
@@ -705,6 +367,7 @@ def verify_doctor(
     try:
         doc_uuid = uuid.UUID(id)
         doc = db.query(DoctorProfile).filter(DoctorProfile.id == doc_uuid).first()
+        if not doc: raise HTTPException(404, "Doctor not found")
         if doc:
             doc.is_approved = True
             doc.approved_by = admin_user.id
@@ -717,7 +380,7 @@ def verify_doctor(
             except Exception:
                 pass
     except Exception:
-        pass # If demo id, simulate success
+        raise HTTPException(404, "Doctor not found")
 
     log_action(
         db,
@@ -726,7 +389,7 @@ def verify_doctor(
         action="DOCTOR_VERIFIED",
         resource_type="doctor_profile",
         resource_id=doc.id if doc else admin_user.id,
-        details={"doctor_id": id, "verified_by": str(admin_user.id), "notification_sent": True},
+        details={"doctor_id": id, "verified_by": str(admin_user.id)},
     )
 
 
@@ -1225,98 +888,7 @@ def admin_cancel_appointment_alias(
 
 
 # --- 6. DATA DELETION REQUESTS ---
-DEMO_DATA_REQUESTS = [
-    {
-        "id": "REQ-2026-001",
-        "db_id": "del-001",
-        "patient_id": "P-2026-0004",
-        "patient_name": "Sunita Verma",
-        "patient_email": "sunita.verma@example.com",
-        "request_date": "2026-09-08",
-        "request_type": "Full Account Deletion",
-        "reason": "Relocating overseas permanently. Requested GDPR & DPDP right-to-be-forgotten erasure of personal profile and all uploaded imaging records.",
-        "status": "pending",
-        "rejection_reason": None,
-        "reviewed_at": None,
-        "data_scope": {
-            "personal_info": "Full legal name, DOB, phone (+91-98765-11223), address",
-            "medical_records": "2 mammograms, 1 ultrasound DICOM, 1 AI report (REP-2026-0014)",
-            "account_data": "Portal login credentials, audit session logs, preferences",
-        },
-    },
-    {
-        "id": "REQ-2026-002",
-        "db_id": "del-002",
-        "patient_id": "P-2026-0007",
-        "patient_name": "Deepa Sundaram",
-        "patient_email": "deepa.sundaram@gmail.com",
-        "request_date": "2026-09-06",
-        "request_type": "Medical Records Purge",
-        "reason": "Completed clinical cycle at secondary hospital. Requests erasure of archived diagnostic scans while maintaining base demographic record.",
-        "status": "pending",
-        "rejection_reason": None,
-        "reviewed_at": None,
-        "data_scope": {
-            "personal_info": "Retained as per request",
-            "medical_records": "Cervical cytology scans, HPV biomarker records, raw image files",
-            "account_data": "Consultation note history",
-        },
-    },
-    {
-        "id": "REQ-2026-003",
-        "db_id": "del-003",
-        "patient_id": "P-2026-0012",
-        "patient_name": "Ritu Mathur",
-        "patient_email": "ritu.m@yahoo.com",
-        "request_date": "2026-09-03",
-        "request_type": "Full Account Deletion",
-        "reason": "Duplicate registration created during hospital emergency intake. Needs duplicate record removed.",
-        "status": "pending",
-        "rejection_reason": None,
-        "reviewed_at": None,
-        "data_scope": {
-            "personal_info": "Duplicate profile name, mobile (+91-98110-33445)",
-            "medical_records": "Duplicate baseline blood panels",
-            "account_data": "Unverified portal profile",
-        },
-    },
-    {
-        "id": "REQ-2026-004",
-        "db_id": "del-004",
-        "patient_id": "P-2026-0002",
-        "patient_name": "Priya Nair",
-        "patient_email": "patient2@auramed.com",
-        "request_date": "2026-08-25",
-        "request_type": "Full Account Deletion",
-        "reason": "Requested complete data erasure under Indian Digital Personal Data Protection Act 2023.",
-        "status": "approved",
-        "rejection_reason": None,
-        "reviewed_at": "2026-08-26 14:15:00",
-        "data_scope": {
-            "personal_info": "Demographics and emergency contacts",
-            "medical_records": "Clinical reports and scans",
-            "account_data": "User credentials",
-        },
-    },
-    {
-        "id": "REQ-2026-005",
-        "db_id": "del-005",
-        "patient_id": "P-2026-0003",
-        "patient_name": "Meera Iyer",
-        "patient_email": "patient3@auramed.com",
-        "request_date": "2026-08-18",
-        "request_type": "Medical Records Purge",
-        "reason": "Request to erase diagnostic data during active clinical treatment regimen.",
-        "status": "rejected",
-        "rejection_reason": "Statutory retention policy: Active clinical oncology treatment requires mandatory 3-year record retention per NABH guidelines.",
-        "reviewed_at": "2026-08-19 11:00:00",
-        "data_scope": {
-            "personal_info": "Active oncology patient record",
-            "medical_records": "Critical risk scans under active treatment",
-            "account_data": "Doctor communication logs",
-        },
-    },
-]
+DEMO_DATA_REQUESTS = []
 
 @router.get("/data-requests")
 def get_data_deletion_requests(
@@ -1403,6 +975,7 @@ def approve_data_deletion_request(
     try:
         rid = uuid.UUID(id)
         req = db.query(DataDeletionRequest).filter(DataDeletionRequest.id == rid).first()
+        if not req: raise HTTPException(404, "Request not found")
         if req:
             req.status = "approved"
             req.reviewed_by = admin_user.id
@@ -1428,7 +1001,7 @@ def approve_data_deletion_request(
                 except Exception:
                     pass
     except Exception:
-        pass  # Demo id
+        raise HTTPException(422, "Request could not be processed; no successful completion is confirmed.")
 
     log_action(
         db,
@@ -1442,14 +1015,14 @@ def approve_data_deletion_request(
             "patient_id": patient_id_str,
             "anonymized": True,
             "soft_deleted": True,
-            "job_triggered": "purge_patient_data_async",
+            "scope": "Selected profile fields anonymized; clinical records retained",
         },
     )
 
     return {
         "id": id,
         "status": "approved",
-        "message": "Data deletion request approved. Patient data soft-deleted and personal information anonymized.",
+        "message": "Data deletion request approved. Account deactivated and selected profile fields anonymized. Clinical records are retained; this is not full erasure.",
     }
 
 
@@ -1465,6 +1038,7 @@ def reject_data_deletion_request(
     try:
         rid = uuid.UUID(id)
         req = db.query(DataDeletionRequest).filter(DataDeletionRequest.id == rid).first()
+        if not req: raise HTTPException(404, "Request not found")
         if req:
             req.status = "rejected"
             req.reviewed_by = admin_user.id
@@ -1835,154 +1409,31 @@ def update_feature_flag(
     return {"flag_name": flag_name, "enabled": bool(enabled), "flags": flags}
 
 
-@router.post("/backup")
-@router.post("/settings/backup")
-def trigger_database_backup(
-    request: Request,
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin),
-):
-    """
-    Triggers a database backup
-    For now: dumps all table counts and last record dates to a JSON file
-    Saves to uploads/backups/ directory
-    Returns: {backup_file: filename, created_at: timestamp}
-    """
-    import os
-    import json
-    from app.models.user import User
-    from app.models.doctor_profile import DoctorProfile
-    from app.models.patient_profile import PatientProfile
-    from app.models.scan import Scan
-    from app.models.report import Report
-    from app.models.appointment import Appointment
-    from app.models.referral import Referral
-    from app.models.audit_log import AuditLog
-    from app.models.notification import Notification
-    from app.models.data_deletion_request import DataDeletionRequest
-    from app.models.session import DoctorSession
-    from app.models.system_settings import SystemSettings
-
-    table_models = {
-        "users": User,
-        "doctor_profiles": DoctorProfile,
-        "patient_profiles": PatientProfile,
-        "scans": Scan,
-        "reports": Report,
-        "appointments": Appointment,
-        "referrals": Referral,
-        "audit_logs": AuditLog,
-        "notifications": Notification,
-        "data_deletion_requests": DataDeletionRequest,
-        "doctor_sessions": DoctorSession,
-        "system_settings": SystemSettings,
-    }
-
-    stats = {}
-    now_utc = datetime.now(timezone.utc)
-    for t_name, model in table_models.items():
-        try:
-            cnt = db.query(model).count()
-            # Try getting last record created_at
-            last_dt = None
-            if hasattr(model, "created_at"):
-                last_rec = db.query(model).order_by(model.created_at.desc()).first()
-                if last_rec and hasattr(last_rec, "created_at") and last_rec.created_at:
-                    last_dt = last_rec.created_at.isoformat()
-            elif hasattr(model, "updated_at"):
-                last_rec = db.query(model).order_by(model.updated_at.desc()).first()
-                if last_rec and hasattr(last_rec, "updated_at") and last_rec.updated_at:
-                    last_dt = last_rec.updated_at.isoformat()
-
-            stats[t_name] = {
-                "count": cnt,
-                "last_record_date": last_dt or now_utc.isoformat(),
-            }
-        except Exception:
-            stats[t_name] = {"count": 0, "last_record_date": now_utc.isoformat()}
-
-    backup_payload = {
-        "metadata": {
-            "platform": "AuraMed Healthcare System",
-            "backup_version": "1.0",
-            "created_at": now_utc.isoformat(),
-            "triggered_by": str(admin_user.id),
-            "admin_email": admin_user.email,
-        },
-        "table_stats": stats,
-    }
-
-    backups_dir = os.path.join("uploads", "backups")
-    os.makedirs(backups_dir, exist_ok=True)
-    filename = f"auramed_backup_{now_utc.strftime('%Y%m%d_%H%M%S')}.json"
-    file_path = os.path.join(backups_dir, filename)
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(backup_payload, f, indent=2)
-
-    log_action(
-        db,
-        user_id=admin_user.id,
-        user_type="admin",
-        action="DATA_EXPORTED",
-        resource_type="system_backup",
-        resource_id=admin_user.id,
-        details={"backup_file": filename, "tables_backed_up": list(stats.keys())},
-        request=request,
-    )
-
-    return {
-        "backup_file": filename,
-        "created_at": now_utc.isoformat(),
-        "status": "success",
-        "details": stats,
-    }
+@router.post('/backup')
+@router.post('/settings/backup')
+def trigger_database_backup(admin_user: User = Depends(require_admin)):
+    raise HTTPException(501, 'Dashboard backup is unavailable. Use the verified database backup and restore procedure.')
 
 
-@router.post("/settings/test-email")
-def test_email(
-    admin_user: User = Depends(require_admin),
-):
-    return {
-        "status": "success",
-        "message": f"Test notification email successfully transmitted via SMTP to {admin_user.email}.",
-    }
+@router.post('/settings/test-email')
+def test_email(admin_user: User = Depends(require_admin)):
+    raise HTTPException(501, 'This legacy test does not send email. Use the appointment message history to verify actual delivery.')
 
 
-@router.post("/settings/test-sms")
-def test_sms(
-    admin_user: User = Depends(require_admin),
-):
-    return {
-        "status": "success",
-        "message": "Test SMS payload routed through Twilio Telehealth gateway successfully (HTTP 200).",
-    }
+@router.post('/settings/test-sms')
+def test_sms(admin_user: User = Depends(require_admin)):
+    raise HTTPException(501, 'This legacy test does not send SMS. Test-number delivery must be verified through the care message history.')
 
 
-@router.get("/settings/download-backup")
-def download_backup(
-    admin_user: User = Depends(require_admin),
-):
-    backup_data = json.dumps(_ADMIN_SETTINGS_CACHE, indent=2)
-    filename = f"auramed_full_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    return Response(
-        content=backup_data,
-        media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
+@router.get('/settings/download-backup')
+def download_backup(admin_user: User = Depends(require_admin)):
+    raise HTTPException(501, 'A settings export is not a database backup. No verified backup is available through this endpoint.')
 
 
 
-@router.post("/settings/clear-cache")
-def clear_cache(
-    payload: dict,
-    admin_user: User = Depends(require_admin),
-):
-    cache_type = payload.get("type", "all")
-    return {
-        "status": "success",
-        "message": f"{cache_type.capitalize()} cache purged successfully. 0 active lingering keys.",
-    }
+@router.post('/settings/clear-cache')
+def clear_cache(payload: dict, admin_user: User = Depends(require_admin)):
+    raise HTTPException(501, 'Cache clearing is not implemented.')
 
 
 class DangerActionRequest(BaseModel):
@@ -2010,6 +1461,6 @@ def execute_danger_action(
         return {"status": "success", "message": "All feature flags have been restored to strict system defaults."}
 
     if payload.action == "clear_drafts":
-        return {"status": "success", "message": "All unfinalized draft reports have been cleared."}
+        raise HTTPException(501, "Bulk draft deletion is not implemented.")
 
     raise HTTPException(status_code=400, detail="Unknown danger action.")

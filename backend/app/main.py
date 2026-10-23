@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+import logging
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.doctor_dashboard import router as doctor_dashboard_router
@@ -77,12 +77,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
+    logging.getLogger("auramed").exception("Unhandled application error", exc_info=exc)
     return JSONResponse(
         status_code=500,
         content={
             "error": True,
-            "message": f"Internal server error: {str(exc)}",
-            "detail": f"Internal server error: {str(exc)}",
+            "message": "An unexpected error occurred. Please contact your administrator.",
+            "detail": "An unexpected error occurred. Please contact your administrator.",
             "code": 500,
         },
     )
@@ -96,6 +97,8 @@ app.include_router(patient_detail_router)
 app.include_router(scans_router)
 app.include_router(scan_results_router)
 app.include_router(reports_router)
+from app.api.routes.care import router as care_router
+app.include_router(care_router)
 app.include_router(appointments_router)
 app.include_router(referrals_router)
 app.include_router(admin_router)
@@ -103,34 +106,18 @@ app.include_router(patient_portal_router)
 app.include_router(doctor_activity_router)
 app.include_router(doctor_settings_router)
 app.include_router(patients_portal_me_router)
-app.include_router(doctor_scans_submission_router)
+# Retired legacy fixed-score endpoints; all analysis uses scans_router.
+from app.api.routes.workflow import router as workflow_router
+app.include_router(workflow_router)
 
 os.makedirs(settings.upload_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
+from app.api.routes.private_files import router as private_files_router
+app.include_router(private_files_router)
 
 
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
-
-
-@app.get("/api/scans/{scan_id}/primary-image")
-def get_primary_image_alias(scan_id: str):
-    from app.core.database import SessionLocal
-    from app.models.scan import Scan
-    db = SessionLocal()
-    try:
-        scan = db.query(Scan).filter(Scan.id == scan_id).first()
-        if not scan:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Scan not found")
-        return {
-            "scan_id": str(scan.id),
-            "image_url": f"/{scan.image_path}" if scan.image_path else None,
-            "image_path": scan.image_path,
-        }
-    finally:
-        db.close()
 
 
 @app.post("/api/reports/{report_id}/share")
@@ -157,6 +144,8 @@ def on_startup():
     from app.core.database import Base, engine, SessionLocal
     import app.models  # noqa
     Base.metadata.create_all(bind=engine)
+    from app.core.database import ensure_care_columns
+    ensure_care_columns()
 
 
     try:

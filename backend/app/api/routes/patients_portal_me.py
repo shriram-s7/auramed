@@ -148,116 +148,17 @@ def get_own_appointments(
 
 
 @router.get("/scans")
-def get_own_scans(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_patient),
-):
-    profile = _get_patient_profile(db, current_user)
-    scans = (
-        db.query(Scan)
-        .filter(Scan.patient_id == profile.id)
-        .order_by(Scan.created_at.desc())
-        .all()
-    )
-    result = []
-    for s in scans:
-        result.append(
-            {
-                "id": str(s.id),
-                "module": s.module.value if hasattr(s.module, "value") else str(s.module),
-                "scan_date": str(s.scan_date) if s.scan_date else str(s.created_at.date() if s.created_at else ""),
-                "status": s.status.value if hasattr(s.status, "value") else str(s.status),
-                "risk_level": s.risk_level.value if (s.risk_level and hasattr(s.risk_level, "value")) else (str(s.risk_level) if s.risk_level else "low"),
-                "confidence_score": s.confidence_score,
-                "image_url": f"/{s.image_path}" if s.image_path else None,
-                "findings": s.reasoning,
-                "ai_suggestions": s.ai_suggestions,
-                "created_at": str(s.created_at) if s.created_at else None,
-            }
-        )
-    return result
+def get_own_scans(db: Session = Depends(get_db), current_user: User = Depends(require_patient)):
+    raise HTTPException(410, 'Research analysis is clinician-only. Use your released reports for findings and next steps.')
 
 
 @router.get("/reports")
-def get_own_reports(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_patient),
-):
-    profile = _get_patient_profile(db, current_user)
-    # Return signed / approved reports or shared reports
-    reports = (
-        db.query(Report)
-        .filter(
-            Report.patient_id == profile.id,
-            (Report.status.in_([ReportStatus.signed, ReportStatus.addendum])) | (Report.shared_with_patient == True),
-        )
-        .order_by(Report.created_at.desc())
-        .all()
-    )
-    result = []
-    for r in reports:
-        doc = r.doctor
-        result.append(
-            {
-                "id": str(r.id),
-                "report_number": r.report_number,
-                "status": r.status.value if hasattr(r.status, "value") else str(r.status),
-                "signed_at": str(r.signed_at) if r.signed_at else None,
-                "doctor_name": doc.full_name if doc else "Consulting Doctor",
-                "doctor_specialty": doc.specialty if doc else None,
-                "created_at": str(r.created_at) if r.created_at else None,
-                "content": r.content,
-            }
-        )
-    return result
+def get_own_reports(db: Session = Depends(get_db), current_user: User = Depends(require_patient)):
+    from app.api.routes.patient_portal import get_patient_reports
+    return get_patient_reports(db, _get_patient_profile(db, current_user))['items']
 
 
 @router.get("/reports/{report_id}")
-def get_own_report_detail(
-    report_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_patient),
-):
-    try:
-        rid = uuid.UUID(report_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-
-    profile = _get_patient_profile(db, current_user)
-    report = db.query(Report).filter(Report.id == rid).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-
-    if report.patient_id != profile.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. You do not have permission to view this report."
-        )
-
-    if not (report.shared_with_patient or report.status in [ReportStatus.shared_with_patient, ReportStatus.signed, ReportStatus.approved]):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This report has not yet been approved or shared with you by your physician."
-        )
-
-    doc = report.doctor
-    content = dict(report.content or {})
-    # Strip raw AI scores to keep report patient-safe
-    patient_safe_content = {
-        "patient_info": content.get("patient_info"),
-        "clinical_summary": content.get("clinical_summary", "Diagnostic screening verified by consulting physician."),
-        "imaging_findings": content.get("imaging_findings", "Anatomical structures evaluated within clinical protocol."),
-        "recommendations": content.get("recommendations", "Routine follow-up as scheduled."),
-        "addendums": content.get("addendums", []),
-    }
-
-    return {
-        "id": str(report.id),
-        "report_number": report.report_number,
-        "status": report.status.value if hasattr(report.status, "value") else str(report.status),
-        "signed_at": str(report.signed_at) if report.signed_at else None,
-        "doctor_name": doc.full_name if doc else "Consulting Doctor",
-        "doctor_specialty": doc.specialty if doc else None,
-        "content": patient_safe_content,
-        "created_at": str(report.created_at) if report.created_at else None,
-    }
+def get_own_report_detail(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_patient)):
+    from app.api.routes.patient_portal import get_patient_report_detail
+    return get_patient_report_detail(report_id, db, _get_patient_profile(db, current_user))

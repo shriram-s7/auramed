@@ -637,20 +637,9 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     return _issue_tokens(user, db)
 
 
-@router.post("/forgot-password", response_model=MessageResponse)
+@router.post('/forgot-password', response_model=MessageResponse)
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    generic_message = MessageResponse(
-        message="If an account with that email exists, a password reset link has been sent."
-    )
-    user = db.query(User).filter(User.email == payload.email).first()
-    if not user:
-        return generic_message
-
-    reset_token = create_password_reset_token({"sub": str(user.id)})
-    # No email provider is wired up yet; log the token server-side so it can be
-    # retrieved for local testing instead of leaking it through the API response.
-    logger.info("Password reset token for %s: %s", user.email, reset_token)
-    return generic_message
+    raise HTTPException(503, 'Email password recovery is not configured. Contact the clinic administrator.')
 
 
 @router.post("/reset-password", response_model=MessageResponse)

@@ -328,21 +328,6 @@ def create_patient(
             detail="Date of birth must be in the past.",
         )
 
-    # Validate patient is not already registered with same phone under this doctor
-    duplicate_phone = (
-        db.query(PatientProfile)
-        .filter(
-            PatientProfile.phone == validated_phone,
-            PatientProfile.created_by_doctor_id == doctor.id,
-        )
-        .first()
-    )
-    if duplicate_phone:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A patient with this phone number is already registered under your account.",
-        )
-
     # Validate email uniqueness if provided
     email = payload.email
     if email:
@@ -361,10 +346,10 @@ def create_patient(
             if hasattr(payload.consent, "model_dump")
             else dict(payload.consent)
         )
-        if hasattr(payload.consent, "data_storage_and_ai_analysis") and not payload.consent.data_storage_and_ai_analysis:
+        if not (consent_dict.get("record_consent") or consent_dict.get("data_storage_and_ai_analysis")):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Informed consent for data storage and AI analysis is required.",
+                detail="Patient consent to maintaining their care record is required.",
             )
 
     patient_code = _generate_patient_code(db)
