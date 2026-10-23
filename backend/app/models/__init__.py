@@ -1,4 +1,5 @@
 from app.models.appointment import Appointment
+from app.models.appointment_request import AppointmentRequest
 from app.models.audit_log import AuditLog
 from app.models.data_deletion_request import DataDeletionRequest
 from app.models.doctor_profile import DoctorProfile
@@ -25,5 +26,4 @@ __all__ = [
     "SystemSettings",
     "User",
 ]
-
 

@@ -21,6 +21,10 @@ class Notification(Base, UUIDPKMixin):
     delivery_method = Column(String(50), nullable=False, default="in_app")  # in_app / email / sms
     delivery_status = Column(String(50), nullable=False, default="sent")  # pending / sent / failed / permanently_failed
     retry_count = Column(Integer, nullable=False, default=0)
+    dedupe_key = Column(String(255), nullable=True, unique=True)
+    provider_id = Column(String(100), nullable=True)
+    last_error = Column(Text, nullable=True)
+    next_attempt_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     sent_at = Column(DateTime(timezone=True), nullable=True)
 
