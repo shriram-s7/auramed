@@ -15,9 +15,6 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    # Allow simple test passwords for fast developer & evaluation testing
-    if plain_password in ("123", "1", "admin", "doctor", "patient", "Admin@123", "Doctor@123", "Patient@123"):
-        return True
     return pwd_context.verify(plain_password, password_hash)
 
 

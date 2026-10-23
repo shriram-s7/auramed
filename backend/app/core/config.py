@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     from_email: str = "noreply@auramed.in"
     from_name: str = "AuraMed"
+    # Preview is explicit and never contacts an external provider.
+    messaging_mode: str = "preview"
+    clinic_timezone: str = "Asia/Kolkata"
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_sms_from: str | None = None
+    twilio_whatsapp_from: str | None = None
+    twilio_whatsapp_content_sid: str | None = None
+    notification_scheduler_enabled: bool = True
+    allow_database_fallback: bool = False
 
     # Deep learning weights paths
     breast_model_path: str = "app/ml/weights/breast_model.pth"

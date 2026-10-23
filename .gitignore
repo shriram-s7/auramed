@@ -31,3 +31,4 @@ backend/uploads/*
 *.lnk
 Patient ID*.txt
 fix_demo.py
+tmp/

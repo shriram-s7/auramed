@@ -19,3 +19,4 @@ pillow
 reportlab
 weasyprint
 apscheduler
+tzdata

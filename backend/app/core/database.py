@@ -32,8 +32,10 @@ if db_url.startswith("postgresql"):
         with test_engine.connect() as conn:
             pass
         engine = test_engine
-        logger.info(f"Connected to PostgreSQL database at {db_url}")
+        logger.info("Connected to configured PostgreSQL database")
     except Exception as e:
+        if not settings.allow_database_fallback:
+            raise RuntimeError('Configured PostgreSQL is unavailable. Restore it or explicitly select a development SQLite database.') from None
         connected = False
         try:
             import subprocess
@@ -44,14 +46,14 @@ if db_url.startswith("postgresql"):
                 with alt_engine.connect() as conn:
                     pass
                 engine = alt_engine
-                logger.info(f"Connected to PostgreSQL database in WSL at {alt_url}")
+                logger.info("Connected to configured PostgreSQL database in WSL")
                 connected = True
         except Exception:
             pass
 
         if not connected:
             logger.warning(
-                f"PostgreSQL at localhost:5432 is not running ({e}). "
+                "PostgreSQL is unavailable. "
                 f"Automatically switching to local SQLite database."
             )
             is_sqlite = True
@@ -65,7 +67,7 @@ if is_sqlite:
     from sqlalchemy import event
 
     engine = create_engine(
-        f"sqlite:///{sqlite_path}",
+        db_url if db_url.startswith("sqlite:") else f"sqlite:///{sqlite_path}",
         connect_args={"check_same_thread": False, "timeout": 30},
         pool_pre_ping=True,
     )
@@ -125,3 +127,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_care_columns():
+    """Local SQLite compatibility; PostgreSQL uses Alembic 0005."""
+    if engine.dialect.name != "sqlite":
+        return
+    from sqlalchemy import inspect, text
+    if not inspect(engine).has_table("notifications"):
+        return
+    existing = {c["name"] for c in inspect(engine).get_columns("notifications")}
+    with engine.begin() as conn:
+        for name, kind in {"dedupe_key": "VARCHAR(255)", "provider_id": "VARCHAR(100)",
+                           "last_error": "TEXT", "next_attempt_at": "DATETIME"}.items():
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE notifications ADD COLUMN {name} {kind}"))
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_notifications_dedupe_key ON notifications (dedupe_key)"))
